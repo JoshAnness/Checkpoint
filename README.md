@@ -47,17 +47,29 @@ An internet connection at some point in the day.
 
 #### Examples
 1.1
+
 **Given** data on the weather is available
+
 **When** I give my location
+
 **Then** I should have a weather forecast
+
 1.2
+
 **Given** I am in an area with a weather warning
+
 **Then** I should receive an alert about the warning
+
 1.3
+
 **Given** a weather event is going to happen at a certain time
+
 **Then** I should get a warning ahead of time
+
 1.4
+
 **Given** internet connection is not available   
+
 **Then** I should get the last saved weather report
 
 ### Requirement 101.0: Driving Events
@@ -73,22 +85,33 @@ The device knows it’s in a car.
 #### Examples
 
 1.1
+
 **Given** the speed of the car
+
 **Given** the speed limit in the area 
+
 **When**
-•	“Alert when over speed limit” is selected
+
+- “Alert when over speed limit” is selected
+
 **Then** warn the user that they’re going over the speed limit
 
 1.2
+
 **Given** the information of a slowdown ahead
+
 **Then** inform the user of the slowdown ahead
 
 1.3
+
 **Given** a crash, or blockade ahead
+
 **Then** warn the user of the event
 
 1.4
+
 **Given** police reported in the route
+
 **Then** warn the user about police ahead
 
 ## Class Diagram
@@ -98,21 +121,32 @@ The device knows it’s in a car.
 ### Class Diagram Description
 
 **MainActivity**:  The first screen the user sees. This will show the map with the driver and various inherited objects.
+
 **Driver**:  Noun class that represents the driver. 
+
 **Map**: Noun class that represents the map. 
+
 **Route**: Noun class that represents the route. 
+
 **Event**: Noun class that represents an event. 
+
 **WeatherCondition**: Noun class that represents a weather condition. 
+
 **WeatherStatus**: Noun class that represents the weather status. 
+
 **IDriverDAO**: Interface to Driver.
+
 **IMapDAO**: Interface to interact with Map data.
+
 **IRouteDAO**: Interface for Route, will parse JSON.
+
 **IEventDAO**: Interface for Event, will parse JSON.
+
 **IWeatherDAO**: Interface for weather, will parse JSON. 
 
-## Scrum
+## Scrum Roles
 
-[ScrumBoard](https://github.com/JoshAnness/Checkpoint/projects)
+[Scrum Board](https://github.com/JoshAnness/Checkpoint/projects)
 - Product Owner: Josh Anness
 - Scrum Master: Brendan Payne
 - DevOps: Travis Newberry
