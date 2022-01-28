@@ -13,9 +13,9 @@ Brendan Payne
 
 Driving in this fast-paced world, anything can happen. Do you want to adapt quickly to events that occur? Checkpoint can make it happen.
 
-•	Weather events/changes
-•	Events like traffic, accidents, and hazards
-•	Police activity/speed traps
+-	Weather events/changes
+-	Events like traffic, accidents, and hazards
+-	Police activity/speed traps
 
 Use your Android device to navigate life with Checkpoint. Use GPS for real-time directions. Receive data and events about your surroundings and other user data. 
 
@@ -23,7 +23,7 @@ Use your Android device to navigate life with Checkpoint. Use GPS for real-time 
 
 [Checkpoint Storyboard](https://projects.invisionapp.com/prototype/Main-ckyx7vr3a0000l201fgsuoptd/play/e178daa4)
 
-![CheckpointFirstScreen](![image](https://user-images.githubusercontent.com/46828931/151495872-8a9a229c-a250-41be-8400-e992c33c6eef.png)
+(![image](https://user-images.githubusercontent.com/46828931/151495872-8a9a229c-a250-41be-8400-e992c33c6eef.png)
  
 ## Functional Requirements
 
