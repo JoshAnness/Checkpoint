@@ -34,7 +34,7 @@ Use your Android device to navigate life with Checkpoint. Use GPS for real-time 
 
 #### Scenario
 
-As a user who wants to know what is going on during the day, I want to be able to see the weather projections and updates.
+As a user who wants to know what is going on during the day, I want to be able to see the weather projections and updates so I know what is going to happen
 
 #### Dependencies
 
@@ -79,7 +79,7 @@ An internet connection at some point in the day.
 
 #### Scenario
 
-The user is driving and wants to know about events around his route.
+As a user that is driving, I want to know about events around my route, so that I can plan accordingly. 
 
 #### Dependencies
 GPS data is available, and the user has granted location access. 
