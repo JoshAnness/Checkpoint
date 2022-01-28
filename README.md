@@ -5,8 +5,11 @@
 Design Document
 
 Travis Newberry
+
 Josh Anness
+
 Christopher Negron
+
 Brendan Payne
 
 ## Introduction
