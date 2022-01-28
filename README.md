@@ -154,3 +154,6 @@ The device knows it’s in a car.
 - Scrum Master: Brendan Payne
 - DevOps: Travis Newberry
 - Developer: Christopher Negron
+
+## Standup
+Sundays at 8:00 on Teams
