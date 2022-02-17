@@ -1,12 +1,15 @@
 package com.example.checkpoint
-import org.junit.Test
-
-
-import org.junit.Assert.*
-import org.junit.Rule
 //Class import
+
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.example.checkpoint.dto.Weather
 import com.example.checkpoint.service.WeatherService
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.*
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TestRule
+
 /**
  * Example local unit test, which will execute on the development machine (host).
  *
@@ -19,6 +22,7 @@ class ExampleUnitTest {
     }
     lateinit var weatherService : WeatherService
     @get:Rule
+    var rule : TestRule = InstantTaskExecutorRule()
     var allWeather : List<Weather>? = ArrayList<Weather>()
     /*
     Requirement 100.0 Weather Forecast
@@ -34,7 +38,7 @@ class ExampleUnitTest {
      */
     //Test: Get Weather Forecast
     @Test
-    suspend fun getForecast(){
+    fun getForecast() = runTest{
         givenWeatherIsAvailable()
         whenLocationIsGiven()
         thenObtainWeatherForecast()
