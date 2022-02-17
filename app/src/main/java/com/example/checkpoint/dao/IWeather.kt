@@ -3,6 +3,7 @@ package com.example.checkpoint.dao
 import com.example.checkpoint.dto.Weather
 import retrofit2.Call
 import retrofit2.http.GET
+
 interface IWeather {
     //TODO("need to change lat and ln to use the andriod info.")
     //NOTE: The current is a example
@@ -19,5 +20,6 @@ interface IWeather {
 
     //@GET(websiteLink)
     @GET("/data/2.5/weather?lat=35&lon=139&appid=69702e05c2554c21cf44563eb81ea624")
+
     fun getAllWeather() : Call<List<Weather>>
 }

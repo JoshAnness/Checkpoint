@@ -23,7 +23,7 @@ class ExampleUnitTest {
     lateinit var weatherService : WeatherService
     @get:Rule
     var rule : TestRule = InstantTaskExecutorRule()
-    var allWeather : List<Weather>? = ArrayList<Weather>()
+    var weather : List<Weather>? = ArrayList<Weather>()
     /*
     Requirement 100.0 Weather Forecast
     Scenario:
@@ -49,15 +49,15 @@ class ExampleUnitTest {
     }
     private suspend fun whenLocationIsGiven() {
         //Goes to WeatherService then inside WeatherService to IWeather
-        allWeather = weatherService.fetchWeather()
+        weather = weatherService.fetchWeather()
     }
     private fun thenObtainWeatherForecast() {
         //Then test to find out if it can extract the weather
-        assertNotNull(allWeather)
-        assertTrue(allWeather!!.isNotEmpty())
+        assertNotNull(weather)
+        assertTrue(weather!!.isNotEmpty())
         var containsDesciption = false
 
-        allWeather!!.forEach{
+        weather!!.forEach{
             if(it.description.contains("clear sky")){
                 containsDesciption = true
             }
