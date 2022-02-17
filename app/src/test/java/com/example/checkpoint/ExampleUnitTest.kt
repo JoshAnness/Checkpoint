@@ -1,9 +1,12 @@
 package com.example.checkpoint
-
 import org.junit.Test
 
-import org.junit.Assert.*
 
+import org.junit.Assert.*
+import org.junit.Rule
+//Class import
+import com.example.checkpoint.dto.Weather
+import com.example.checkpoint.service.WeatherService
 /**
  * Example local unit test, which will execute on the development machine (host).
  *
@@ -14,6 +17,9 @@ class ExampleUnitTest {
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)
     }
+    lateinit var weatherService : WeatherService
+    @get:Rule
+    var allWeather : List<Weather>? = ArrayList<Weather>()
     /*
     Requirement 100.0 Weather Forecast
     Scenario:
@@ -28,22 +34,36 @@ class ExampleUnitTest {
      */
     //Test: Get Weather Forecast
     @Test
-    fun getForecast(){
+    suspend fun getForecast(){
         givenWeatherIsAvailable()
         whenLocationIsGiven()
         thenObtainWeatherForecast()
     }
-    private fun thenObtainWeatherForecast() {
-        TODO("Not yet implemented")
-    }
-
-    private fun whenLocationIsGiven() {
-        TODO("Not yet implemented")
-    }
-
     private fun givenWeatherIsAvailable() {
-        TODO("Not yet implemented")
+        //Goes to WeatherService Class
+        weatherService = WeatherService()
     }
+    private suspend fun whenLocationIsGiven() {
+        //Goes to WeatherService then inside WeatherService to IWeather
+        allWeather = weatherService.fetchWeather()
+    }
+    private fun thenObtainWeatherForecast() {
+        //Then test to find out if it can extract the weather
+        assertNotNull(allWeather)
+        assertTrue(allWeather!!.isNotEmpty())
+        var containsDesciption = false
+
+        allWeather!!.forEach{
+            if(it.description.contains("clear sky")){
+                containsDesciption = true
+            }
+        }
+        assertTrue(containsDesciption)
+    }
+
+
+
+
     //Test: Weather Warning
     @Test
     fun getWeatherWarnings(){
@@ -73,6 +93,7 @@ class ExampleUnitTest {
         TODO("Not yet implemented")
     }
     //Test: Give the last weather report that was made if internet is not available
+    @Test
     fun getLastSavedWeatherReport(){
         givenNoInternetConnection()
         thenShowLastWeatherReport()
