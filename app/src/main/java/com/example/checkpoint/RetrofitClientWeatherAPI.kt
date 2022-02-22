@@ -13,6 +13,7 @@ object RetrofitClientWeatherAPI {
         if(retrofit == null){
             retrofit = retrofit2.Retrofit.Builder()
                 .baseUrl(BASE_URL)
+
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
 

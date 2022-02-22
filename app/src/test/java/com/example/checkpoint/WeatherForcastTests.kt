@@ -2,7 +2,7 @@ package com.example.checkpoint
 //Class import
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.example.checkpoint.dto.Weather
+import com.example.checkpoint.dto.WeatherAPI
 import com.example.checkpoint.service.WeatherService
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
@@ -15,7 +15,7 @@ import org.junit.rules.TestRule
  *
  * See [testing documentation](http://d.android.com/tools/testing).
  */
-class ExampleUnitTest {
+class WeatherForcastTests {
     @Test
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)
@@ -23,7 +23,8 @@ class ExampleUnitTest {
     lateinit var weatherService : WeatherService
     @get:Rule
     var rule : TestRule = InstantTaskExecutorRule()
-    var weather : List<Weather>? = ArrayList<Weather>()
+    var weather : List<WeatherAPI>? = ArrayList<WeatherAPI>()
+
     /*
     Requirement 100.0 Weather Forecast
     Scenario:
@@ -50,6 +51,7 @@ class ExampleUnitTest {
     private suspend fun whenLocationIsGiven() {
         //Goes to WeatherService then inside WeatherService to IWeather
         weather = weatherService.fetchWeather()
+
     }
     private fun thenObtainWeatherForecast() {
         //Then test to find out if it can extract the weather
@@ -58,7 +60,7 @@ class ExampleUnitTest {
         var containsDesciption = false
 
         weather!!.forEach{
-            if(it.description.contains("clear sky")){
+            if(it.weather.equals("stations")){
                 containsDesciption = true
             }
         }
