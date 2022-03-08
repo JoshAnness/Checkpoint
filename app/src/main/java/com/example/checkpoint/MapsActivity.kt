@@ -13,6 +13,7 @@ import com.example.checkpoint.databinding.ActivityMapsBinding
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
+    // Map UI instantiation
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
 
