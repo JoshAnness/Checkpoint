@@ -2,12 +2,24 @@ package com.example.checkpoint
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import kotlinx.coroutines.launch
 
 class MainActivity :AppCompatActivity(), OnMapReadyCallback{
 
@@ -16,6 +28,7 @@ class MainActivity :AppCompatActivity(), OnMapReadyCallback{
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
@@ -40,5 +53,59 @@ class MainActivity :AppCompatActivity(), OnMapReadyCallback{
             .position(sydney)
             .title("Marker in Sydney"))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+    }
+}
+
+
+@ExperimentalMaterialApi
+@Composable
+fun BottomSheet(){
+
+    val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed))
+
+    val coroutineScope = rememberCoroutineScope()
+    BottomSheetScaffold(
+        scaffoldState = bottomSheetScaffoldState,
+        sheetContent =  {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(Color.Green)
+            ) {
+                Column(
+                    Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = "Test", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }, sheetPeekHeight = 0.dp
+    ) {
+
+        Column(
+            Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Button(onClick = {
+
+                coroutineScope.launch {
+
+                    if (bottomSheetScaffoldState.bottomSheetState.isCollapsed){
+                        bottomSheetScaffoldState.bottomSheetState.expand()
+                    }else{
+                        bottomSheetScaffoldState.bottomSheetState.collapse()
+                    }
+                }
+
+            }) {
+                Text(text = "Click Me", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
     }
 }
