@@ -1,6 +1,7 @@
 package com.example.checkpoint
 
 import android.os.Bundle
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.checkpoint.ui.theme.CheckpointTheme
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -25,10 +27,18 @@ class MainActivity :AppCompatActivity(), OnMapReadyCallback{
 
     private lateinit var mMap: GoogleMap
 
+    @ExperimentalMaterialApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_maps)
-
+        //setContentView(R.layout.activity_maps)
+        setContent {
+            CheckpointTheme {
+                // A surface container using the 'background' color from the theme
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+                    BottomSheet()
+                }
+            }
+        }
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
