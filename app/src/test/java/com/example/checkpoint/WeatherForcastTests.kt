@@ -23,7 +23,7 @@ class WeatherForcastTests {
     lateinit var weatherService : WeatherService
     @get:Rule
     var rule : TestRule = InstantTaskExecutorRule()
-    var weather : List<WeatherAPI>? = ArrayList<WeatherAPI>()
+    lateinit var weatherApi : WeatherAPI
 
     /*
     Requirement 100.0 Weather Forecast
@@ -50,21 +50,13 @@ class WeatherForcastTests {
     }
     private suspend fun whenLocationIsGiven() {
         //Goes to WeatherService then inside WeatherService to IWeather
-        weather = weatherService.fetchWeather()
+        weatherApi = weatherService.fetchWeather()
 
     }
     private fun thenObtainWeatherForecast() {
         //Then test to find out if it can extract the weather
-        assertNotNull(weather)
-        assertTrue(weather!!.isNotEmpty())
-        var containsDesciption = false
-
-        weather!!.forEach{
-            if(it.weather.equals("stations")){
-                containsDesciption = true
-            }
-        }
-        assertTrue(containsDesciption)
+        assertNotNull(weatherApi)
+        assertNotNull(weatherApi.weather)
     }
 
 
