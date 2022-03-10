@@ -23,7 +23,7 @@ interface IWeather {
     //@GET(websiteLink)
     @GET("/data/2.5/weather?lat=35&lon=139&appid=69702e05c2554c21cf44563eb81ea624")
 
-    fun getAllWeather() : Call<List<WeatherAPI>>
+    fun getAllWeather() : Call<WeatherAPI>
 
 
 }
