@@ -3,6 +3,7 @@ package com.example.checkpoint
 import android.content.DialogInterface
 import android.location.Location
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -14,6 +15,7 @@ import com.mapbox.android.core.location.LocationEnginePriority
 import com.mapbox.android.core.location.LocationEngineProvider
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
+import com.mapbox.api.directions.v5.models.DirectionsResponse
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
 import com.mapbox.mapboxsdk.annotations.MarkerOptions
@@ -24,6 +26,13 @@ import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode
 import com.mapbox.mapboxsdk.annotations.Marker
 import com.mapbox.mapboxsdk.geometry.LatLng
+import com.mapbox.services.android.navigation.ui.v5.NavigationLauncher
+import com.mapbox.services.android.navigation.ui.v5.NavigationLauncherOptions
+import com.mapbox.services.android.navigation.ui.v5.route.NavigationMapRoute
+import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity(), PermissionsListener, LocationEngineListener, MapboxMap.OnMapClickListener {
 
@@ -38,6 +47,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, LocationEngineLis
     private var locationEngine : LocationEngine? = null
     private var locationLayerPlugin: LocationLayerPlugin? = null
     private var destinationMarker: Marker? = null
+    private var navigationMapRoute: NavigationMapRoute? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +62,13 @@ class MainActivity : AppCompatActivity(), PermissionsListener, LocationEngineLis
         }
 
         startButton.setOnClickListener {
-            // Nav
+            val options = NavigationLauncherOptions.builder()
+                .origin(originPosition)
+                .destination(destinationPosition)
+                //.shouldSimulateRoute(true)
+                .build()
+            NavigationLauncher.startNavigation(this, options)
+
         }
     }
 
@@ -100,7 +116,7 @@ class MainActivity : AppCompatActivity(), PermissionsListener, LocationEngineLis
         destinationMarker = map.addMarker(MarkerOptions().position(point))
         destinationPosition = Point.fromLngLat(point.longitude, point.latitude)
         originPosition = Point.fromLngLat(originLocation.longitude, originLocation.latitude)
-
+        getRoute(originPosition, destinationPosition)
         startButton.isEnabled = true
         startButton.setBackgroundResource(R.color.mapboxBlue)
     }
@@ -148,6 +164,38 @@ class MainActivity : AppCompatActivity(), PermissionsListener, LocationEngineLis
             originLocation = location
             setCameraPosition(location)
         }
+    }
+
+    private fun getRoute(origin: Point, destination: Point) {
+        NavigationRoute.builder()
+            .accessToken(Mapbox.getAccessToken())
+            .origin(origin)
+            .destination(destination)
+            .build()
+            .getRoute(object: Callback<DirectionsResponse> {
+                override fun onResponse(
+                    call: Call<DirectionsResponse>,
+                    response: Response<DirectionsResponse>
+                ) {
+                    val body = response.body() ?: return
+                    if (body.routes().count() == 0) {
+                        Log.e("MainActivity", "No route found")
+                        return
+                    }
+
+                    if (navigationMapRoute != null) {
+                        navigationMapRoute?.removeRoute()
+                    } else {
+                        navigationMapRoute = NavigationMapRoute(null, mapView, map)
+                    }
+
+                    navigationMapRoute?.addRoute(body.routes().first())
+                }
+
+                override fun onFailure(call: Call<DirectionsResponse>, t: Throwable) {
+                    Log.e("MainActivity", "Error: ")
+                }
+            })
     }
 
     @SuppressWarnings("MissingPermission")
