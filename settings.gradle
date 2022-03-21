@@ -6,7 +6,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         jcenter() // Warning: this repository is going to shut down soon
-        maven {
+        /*maven {
             url 'https://api.mapbox.com/downloads/v2/releases/maven'
             authentication {
                 basic(BasicAuthentication)
@@ -18,7 +18,7 @@ dependencyResolutionManagement {
                 // Use the secret token you stored in gradle.properties as the password
                 password = MAPBOX_DOWNLOADS_TOKEN
             }
-        }
+        }*/
     }
 }
 rootProject.name = "Checkpoint"

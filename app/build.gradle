@@ -70,5 +70,7 @@ dependencies {
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
     implementation 'com.google.android.gms:play-services-location:19.0.1'
     // Mapbox dependencies
-    implementation 'com.mapbox.maps:android:10.3.0'
+    //implementation 'com.mapbox.maps:android:10.3.0'
+    implementation 'com.mapbox.mapboxsdk:mapbox-android-sdk:6.0.1'
+    implementation 'com.mapbox.mapboxsdk:mapbox-android-plugin-locationlayer:0.5.0'
 }
