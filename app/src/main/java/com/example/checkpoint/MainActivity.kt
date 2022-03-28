@@ -120,7 +120,7 @@ class MainActivity : AppCompatActivity() {
         mapView.gestures.removeOnMoveListener(onMoveListener)
     }
 
-    override fun onStart() {
+    /*override fun onStart() {
         super.onStart()
         mapView.onStart()
     }
@@ -133,7 +133,7 @@ class MainActivity : AppCompatActivity() {
     override fun onLowMemory() {
         super.onLowMemory()
         mapView.onLowMemory()
-    }
+    }*/
 
     override fun onDestroy() {
         super.onDestroy()
