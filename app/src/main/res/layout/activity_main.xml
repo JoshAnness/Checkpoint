@@ -10,9 +10,9 @@
         android:id="@+id/mapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        mapbox:mapbox_cameraTargetLat="59.31"
-        mapbox:mapbox_cameraTargetLng="18.06"
         mapbox:mapbox_cameraZoom="9.0"
+        mapbox:mapbox_locationComponentEnabled = "true"
+        tools:context=".examples.LocationComponentActivity"
         />
 
     <Button
