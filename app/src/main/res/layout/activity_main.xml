@@ -6,14 +6,14 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <com.mapbox.mapboxsdk.maps.MapView
+    <com.mapbox.maps.MapView
         android:id="@+id/mapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        mapbox:mapbox_cameraTargetLat="39.1300"
-        mapbox:mapbox_cameraTargetLng="-84.5187"
-        mapbox:mapbox_cameraZoom="12"
-        mapbox:mapbox_styleUrl="mapbox://styles/mapbox/traffic-day-v2" />
+        mapbox:mapbox_cameraTargetLat="59.31"
+        mapbox:mapbox_cameraTargetLng="18.06"
+        mapbox:mapbox_cameraZoom="9.0"
+        />
 
     <Button
         android:id="@+id/startButton"

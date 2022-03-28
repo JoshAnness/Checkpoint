@@ -69,14 +69,11 @@ dependencies {
     //noinspection GradleDependency
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
     implementation 'com.google.android.gms:play-services-location:19.0.1'
+
     // Mapbox dependencies
+    implementation 'com.mapbox.mapboxsdk:mapbox-android-core:3.1.0'
+    implementation 'com.mapbox.maps:android:10.4.0'
+    implementation 'com.mapbox.mapboxsdk:mapbox-android-telemetry:6.1.0'
 
-    //implementation 'com.android.support:compat-v7:27.0.2'
 
-    implementation 'com.mapbox.mapboxsdk:mapbox-android-sdk:6.0.1'
-    implementation 'com.mapbox.mapboxsdk:mapbox-android-plugin-locationlayer:0.5.0'
-    implementation 'com.mapbox.mapboxsdk:mapbox-android-navigation:0.13.0'
-    implementation('com.mapbox.mapboxsdk:mapbox-android-navigation-ui:0.13.0') {
-        transitive = true
-    }
 }
