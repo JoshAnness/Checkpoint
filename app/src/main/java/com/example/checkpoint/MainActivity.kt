@@ -9,25 +9,19 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Bundle
-import android.widget.Button
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.mapbox.maps.*
-import com.mapbox.maps.ResourceOptionsManager
-import com.mapbox.maps.Style
-import com.mapbox.maps.plugin.gestures.gestures
-import com.mapbox.maps.plugin.locationcomponent.*
-import com.example.checkpoint.LocationPermissionHelper
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.mapbox.android.core.location.LocationEngine
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.Point
+import com.mapbox.maps.*
 import com.mapbox.maps.extension.style.expressions.dsl.generated.interpolate
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.annotation.annotations
@@ -36,11 +30,19 @@ import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.OnMapClickListener
 import com.mapbox.maps.plugin.gestures.OnMapLongClickListener
 import com.mapbox.maps.plugin.gestures.OnMoveListener
+import com.mapbox.maps.plugin.gestures.gestures
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
+import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.viewannotation.ViewAnnotationManager
 import java.lang.ref.WeakReference
 import java.util.concurrent.CopyOnWriteArrayList
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var permmissionLauncher: ActivityResultLauncher<Array<String>>
+    private var isLocationPermissionGranted = false
+
 
     private lateinit var mapView: MapView
     //private lateinit var startButton: Button
@@ -76,9 +78,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
+
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
+
         mapView = MapView(this)
+
         /*mapView.getMapboxMap().loadStyleUri(
             Style.MAPBOX_STREETS,
             object : Style.OnStyleLoaded {
@@ -89,6 +95,9 @@ class MainActivity : AppCompatActivity() {
         )*/
         //startButton = findViewById(R.id.startButton)
         setContentView(mapView)
+
+
+
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
         locationPermissionHelper.checkPermissions {
             onMapReady()
@@ -115,14 +124,14 @@ class MainActivity : AppCompatActivity() {
         )?.let {
             val annotationApi = mapView.annotations
             val pointAnnotationManager = annotationApi.createPointAnnotationManager()
-        // Set options for the resulting symbol layer.
+            // Set options for the resulting symbol layer.
             val pointAnnotationOptions: PointAnnotationOptions = PointAnnotationOptions()
-        // Define a geographic coordinate.
+                // Define a geographic coordinate.
                 .withPoint(Point.fromLngLat(18.06, 59.31))
-        // Specify the bitmap you assigned to the point annotation
-        // The bitmap will be added to map style automatically.
+                // Specify the bitmap you assigned to the point annotation
+                // The bitmap will be added to map style automatically.
                 .withIconImage(it)
-        // Add the resulting pointAnnotation to the map.
+            // Add the resulting pointAnnotation to the map.
             pointAnnotationManager.create(pointAnnotationOptions)
         }
     }
@@ -237,8 +246,23 @@ class MainActivity : AppCompatActivity() {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
+
+        requestPermission()
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         locationPermissionHelper.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
+    private fun requestPermission(){
+        isLocationPermissionGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val permissionRequest : MutableList<String> = ArrayList()
 
+        if(!isLocationPermissionGranted){
+            permissionRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if(permissionRequest.isNotEmpty()){
+            permmissionLauncher.launch(permissionRequest.toTypedArray())
+        }
+    }
 }
