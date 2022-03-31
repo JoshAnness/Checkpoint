@@ -75,5 +75,12 @@ dependencies {
     implementation 'com.mapbox.maps:android:10.4.0'
     implementation 'com.mapbox.mapboxsdk:mapbox-android-telemetry:6.1.0'
 
+    //Retrofit and GSON
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.beust:klaxon:5.5'
+    testImplementation 'android.arch.core:core-testing:1.1.1'
+
+
 
 }
