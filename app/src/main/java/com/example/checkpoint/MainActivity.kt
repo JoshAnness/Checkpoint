@@ -1,21 +1,38 @@
 package com.example.checkpoint
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.location.Location
 import android.os.Bundle
+import android.widget.Button
+import android.widget.Toast
+import androidx.annotation.DrawableRes
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.mapbox.maps.*
+import com.mapbox.maps.ResourceOptionsManager
+import com.mapbox.maps.Style
+import com.mapbox.maps.plugin.gestures.gestures
+import com.mapbox.maps.plugin.locationcomponent.*
+import com.example.checkpoint.LocationPermissionHelper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
@@ -25,49 +42,213 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.mapbox.android.core.location.LocationEngine
+
+import com.mapbox.geojson.Point
+import java.lang.ref.WeakReference
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var mapView: MapView
+    //private lateinit var startButton: Button
+    private lateinit var mapboxMap: MapboxMap
+
+    private lateinit var originLocation: Location
+    private lateinit var originPosition: Point
+    private lateinit var destinationPosition: Point
+
+    private var LocationEngine : LocationEngine? = null
+
+    private lateinit var locationPermissionHelper: LocationPermissionHelper
+
+    private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
+        mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
+    }
+
+    private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener {
+        mapView.getMapboxMap().setCamera(CameraOptions.Builder().center(it).build())
+        mapView.gestures.focalPoint = mapView.getMapboxMap().pixelForCoordinate(it)
+    }
 import kotlinx.coroutines.launch
 
-class MainActivity :AppCompatActivity(), OnMapReadyCallback{
+    private val onMoveListener = object : OnMoveListener {
+        override fun onMoveBegin(detector: MoveGestureDetector) {
+            onCameraTrackingDismissed()
+        }
 
-    private lateinit var mMap: GoogleMap
+        override fun onMove(detector: MoveGestureDetector): Boolean {
+            return false
+        }
 
-    @ExperimentalMaterialApi
+        override fun onMoveEnd(detector: MoveGestureDetector) {}
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        //setContentView(R.layout.activity_maps)
-        setContent {
-            CheckpointTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
-                    CheckpointBottomSheet()
+        ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
+        mapView = MapView(this)
+        /*mapView.getMapboxMap().loadStyleUri(
+            Style.MAPBOX_STREETS,
+            object : Style.OnStyleLoaded {
+                override fun onStyleLoaded(style: Style) {
+                    addAnnotationToMap()
                 }
             }
+        )*/
+        //startButton = findViewById(R.id.startButton)
+        setContentView(mapView)
+        locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
+        locationPermissionHelper.checkPermissions {
+            onMapReady()
         }
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync(this)
+        //mapView = findViewById(R.id.mapView)
+        /*mapView.getMapboxMap().loadStyleUri(
+            Style.MAPBOX_STREETS,
+            object : Style.OnStyleLoaded {
+                override fun onStyleLoaded(style: Style) {
+                    addAnnotationToMap()
+                }
+            }
+        )*/
+        /*startButton.setOnClickListener {
+
+        }*/
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
-    override fun onMapReady(googleMap: GoogleMap) {
-        mMap = googleMap
-
-        // Add a marker in Sydney and move the camera
-        val sydney = LatLng(-34.0, 151.0)
-        mMap.addMarker(MarkerOptions()
-            .position(sydney)
-            .title("Marker in Sydney"))
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+    private fun addAnnotationToMap() {
+        // Create an instance of the Annotation API and get the PointAnnotationManager.
+        bitmapFromDrawableRes(
+            this@MainActivity,
+            R.drawable.red_marker
+        )?.let {
+            val annotationApi = mapView.annotations
+            val pointAnnotationManager = annotationApi.createPointAnnotationManager()
+        // Set options for the resulting symbol layer.
+            val pointAnnotationOptions: PointAnnotationOptions = PointAnnotationOptions()
+        // Define a geographic coordinate.
+                .withPoint(Point.fromLngLat(18.06, 59.31))
+        // Specify the bitmap you assigned to the point annotation
+        // The bitmap will be added to map style automatically.
+                .withIconImage(it)
+        // Add the resulting pointAnnotation to the map.
+            pointAnnotationManager.create(pointAnnotationOptions)
+        }
     }
+    private fun bitmapFromDrawableRes(context: Context, @DrawableRes resourceId: Int) =
+        convertDrawableToBitmap(AppCompatResources.getDrawable(context, resourceId))
+
+    private fun convertDrawableToBitmap(sourceDrawable: Drawable?): Bitmap? {
+        if (sourceDrawable == null) {
+            return null
+        }
+        return if (sourceDrawable is BitmapDrawable) {
+            sourceDrawable.bitmap
+        } else {
+            // copying drawable object to not manipulate on the same reference
+            val constantState = sourceDrawable.constantState ?: return null
+            val drawable = constantState.newDrawable().mutate()
+            val bitmap: Bitmap = Bitmap.createBitmap(
+                drawable.intrinsicWidth, drawable.intrinsicHeight,
+                Bitmap.Config.ARGB_8888
+            )
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.draw(canvas)
+            bitmap
+        }
+    }
+
+    private fun onMapReady() {
+        mapView.getMapboxMap().setCamera(
+            CameraOptions.Builder()
+                .zoom(14.0)
+                .build()
+        )
+        mapView.getMapboxMap().loadStyleUri(
+            Style.MAPBOX_STREETS
+        ) {
+            initLocationComponent()
+            setupGesturesListener()
+        }
+    }
+
+    private fun setupGesturesListener() {
+        mapView.gestures.addOnMoveListener(onMoveListener)
+    }
+
+    private fun initLocationComponent() {
+        val locationComponentPlugin = mapView.location
+        locationComponentPlugin.updateSettings {
+            this.enabled = true
+            this.locationPuck = LocationPuck2D(
+                bearingImage = AppCompatResources.getDrawable(
+                    this@MainActivity,
+                    R.drawable.mapbox_user_puck_icon,
+                ),
+                shadowImage = AppCompatResources.getDrawable(
+                    this@MainActivity,
+                    R.drawable.mapbox_user_icon_shadow,
+                ),
+                scaleExpression = interpolate {
+                    linear()
+                    zoom()
+                    stop {
+                        literal(0.0)
+                        literal(0.6)
+                    }
+                    stop {
+                        literal(20.0)
+                        literal(1.0)
+                    }
+                }.toJson()
+            )
+        }
+        locationComponentPlugin.addOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
+        locationComponentPlugin.addOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
+    }
+
+    private fun onCameraTrackingDismissed() {
+        Toast.makeText(this, "onCameraTrackingDismissed", Toast.LENGTH_SHORT).show()
+        mapView.location
+            .removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
+        mapView.location
+            .removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
+        mapView.gestures.removeOnMoveListener(onMoveListener)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        mapView.onStart()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        mapView.onStop()
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        mapView.onLowMemory()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mapView.location
+            .removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
+        mapView.location
+            .removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
+        mapView.gestures.removeOnMoveListener(onMoveListener)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        locationPermissionHelper.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
 }
 
 

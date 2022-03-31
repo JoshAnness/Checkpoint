@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">Checkpoint</string>
-    <string name="title_activity_maps">MapsActivity</string>
+    <string name="title_activity_maps">MainActivity</string>
+    <string name="mapbox_access_token">sk.eyJ1IjoiY2hlY2twb2ludGFwcCIsImEiOiJjbDEweTJneHExNWlmM2tydHN0eW5nYmJpIn0.IW_zfZ7DhC6Nz7HozTpZ3g</string>
+    <string name="go">Go!</string>
 </resources>
