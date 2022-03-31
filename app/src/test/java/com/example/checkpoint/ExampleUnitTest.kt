@@ -3,6 +3,7 @@ package com.example.checkpoint
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.example.checkpoint.dto.WeatherAPI
 import com.example.checkpoint.services.WeatherService
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Rule
@@ -40,16 +41,9 @@ class ExampleUnitTest {
      */
     //Test: Get Weather Forecast
     @Test
-    fun getForecast() {
+    fun getForecast() = runTest{
         givenWeatherIsAvailable()
-
-
-
-
-       // whenLocationIsGiven()
-
-
-
+        whenLocationIsGiven()
         thenObtainWeatherForecast()
     }
 
