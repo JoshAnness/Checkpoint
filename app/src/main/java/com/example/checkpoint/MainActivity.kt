@@ -5,15 +5,19 @@ import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.checkpoint.extension.currentFraction
+import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -35,7 +39,7 @@ class MainActivity :AppCompatActivity(), OnMapReadyCallback{
             CheckpointTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
-                    BottomSheet()
+                    CheckpointBottomSheet()
                 }
             }
         }
@@ -67,55 +71,116 @@ class MainActivity :AppCompatActivity(), OnMapReadyCallback{
 }
 
 
-@ExperimentalMaterialApi
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun BottomSheet(){
+fun CheckpointBottomSheet(){
+    val scope = rememberCoroutineScope()
 
-    val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed))
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
+    )
 
-    val coroutineScope = rememberCoroutineScope()
-    BottomSheetScaffold(
-        scaffoldState = bottomSheetScaffoldState,
-        sheetContent =  {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .background(Color.Green)
-            ) {
-                Column(
-                    Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(text = "Test", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }, sheetPeekHeight = 0.dp
-    ) {
-
-        Column(
-            Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            Button(onClick = {
-
-                coroutineScope.launch {
-
-                    if (bottomSheetScaffoldState.bottomSheetState.isCollapsed){
-                        bottomSheetScaffoldState.bottomSheetState.expand()
-                    }else{
-                        bottomSheetScaffoldState.bottomSheetState.collapse()
-                    }
-                }
-
-            }) {
-                Text(text = "Click Me", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+    val sheetToggle: () -> Unit = {
+        scope.launch {
+            if (scaffoldState.bottomSheetState.isCollapsed) {
+                scaffoldState.bottomSheetState.expand()
+            } else {
+                scaffoldState.bottomSheetState.collapse()
             }
         }
+    }
 
+    val title = "Checkpoint"
+
+    val radius = (30 * scaffoldState.currentFraction).dp
+
+    BottomSheetScaffold(
+        modifier = Modifier.fillMaxSize(),
+        scaffoldState = scaffoldState,
+        sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
+        topBar = { TopBar() },
+        sheetContent = {
+            SheetExpanded{
+                BottomSheetContentLarge()
+            }
+            SheetCollapsed(
+                isCollapsed = scaffoldState.bottomSheetState.isCollapsed,
+                currentFraction = scaffoldState.currentFraction,
+                onSheetClick = sheetToggle
+            ) {
+                BottomSheetContentSmall()
+            }
+        },
+        sheetPeekHeight = 72.dp
+    ) {
+        // TODO: Add a debug screen to test the bottom sheet
+    }
+}
+
+@Composable
+fun BottomSheetContentSmall() {
+    Text(
+        text = "Bottom Sheet Content Small",
+        modifier = Modifier.padding(16.dp)
+    )
+}
+
+@Composable
+fun BottomSheetContentLarge() {
+    Text(text = "Bottom Sheet Content Large",
+        modifier = Modifier.padding(16.dp)
+    )
+}
+
+@Composable
+fun SheetCollapsed(
+    isCollapsed: Boolean,
+    currentFraction: Float,
+    onSheetClick: () -> Unit,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .background(MaterialTheme.colors.primary)
+            .graphicsLayer(alpha = 1f - currentFraction)
+            .noRippleClickable(
+                onClick = onSheetClick,
+                enabled = isCollapsed
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.primary)
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun TopBar() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .background(MaterialTheme.colors.primary)
+            .graphicsLayer(alpha = 0.5f)
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "Checkpoint",
+            style = MaterialTheme.typography.h6,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp)
+        )
     }
 }
