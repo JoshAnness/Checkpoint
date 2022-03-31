@@ -1,28 +1,17 @@
 package com.example.checkpoint
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Bundle
-import android.widget.Button
 import android.widget.Toast
-import androidx.annotation.DrawableRes
 import androidx.activity.compose.setContent
+import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import com.mapbox.maps.*
-import com.mapbox.maps.ResourceOptionsManager
-import com.mapbox.maps.Style
-import com.mapbox.maps.plugin.gestures.gestures
-import com.mapbox.maps.plugin.locationcomponent.*
-import com.example.checkpoint.LocationPermissionHelper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,18 +22,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import com.mapbox.maps.*
+import com.mapbox.maps.ResourceOptionsManager
+import com.mapbox.maps.Style
+import com.mapbox.maps.plugin.gestures.gestures
+import com.mapbox.maps.plugin.locationcomponent.*
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
 import com.mapbox.android.core.location.LocationEngine
-
+import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
+import com.mapbox.maps.extension.style.expressions.dsl.generated.interpolate
+import com.mapbox.maps.plugin.LocationPuck2D
+import com.mapbox.maps.plugin.annotation.annotations
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
+import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
+import com.mapbox.maps.plugin.gestures.OnMoveListener
+import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 
 class MainActivity : AppCompatActivity() {
@@ -69,8 +65,6 @@ class MainActivity : AppCompatActivity() {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().center(it).build())
         mapView.gestures.focalPoint = mapView.getMapboxMap().pixelForCoordinate(it)
     }
-import kotlinx.coroutines.launch
-
     private val onMoveListener = object : OnMoveListener {
         override fun onMoveBegin(detector: MoveGestureDetector) {
             onCameraTrackingDismissed()
@@ -87,32 +81,18 @@ import kotlinx.coroutines.launch
         super.onCreate(savedInstanceState)
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
         mapView = MapView(this)
-        /*mapView.getMapboxMap().loadStyleUri(
-            Style.MAPBOX_STREETS,
-            object : Style.OnStyleLoaded {
-                override fun onStyleLoaded(style: Style) {
-                    addAnnotationToMap()
+        setContent {
+            CheckpointTheme{
+                Surface(color = MaterialTheme.colors.background){
+
                 }
+                CheckpointHome(mapView)
             }
-        )*/
-        //startButton = findViewById(R.id.startButton)
-        setContentView(mapView)
+        }
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
         locationPermissionHelper.checkPermissions {
             onMapReady()
         }
-        //mapView = findViewById(R.id.mapView)
-        /*mapView.getMapboxMap().loadStyleUri(
-            Style.MAPBOX_STREETS,
-            object : Style.OnStyleLoaded {
-                override fun onStyleLoaded(style: Style) {
-                    addAnnotationToMap()
-                }
-            }
-        )*/
-        /*startButton.setOnClickListener {
-
-        }*/
     }
 
     private fun addAnnotationToMap() {
@@ -251,10 +231,21 @@ import kotlinx.coroutines.launch
 
 }
 
+@Composable
+private fun MapboxMapView(mapView: MapView) {
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = {
+            mapView
+        },
+        update = {
+        }
+    )
+}
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun CheckpointBottomSheet(){
+fun CheckpointHome(mapView: MapView){
     val scope = rememberCoroutineScope()
 
     val scaffoldState = rememberBottomSheetScaffoldState(
@@ -280,6 +271,7 @@ fun CheckpointBottomSheet(){
         scaffoldState = scaffoldState,
         sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
         topBar = { TopBar() },
+        content = { MapboxMapView(mapView) },
         sheetContent = {
             SheetExpanded{
                 BottomSheetContentLarge()
@@ -293,23 +285,25 @@ fun CheckpointBottomSheet(){
             }
         },
         sheetPeekHeight = 72.dp
-    ) {
-        // TODO: Add a debug screen to test the bottom sheet
-    }
+    )
 }
 
 @Composable
 fun BottomSheetContentSmall() {
     Text(
         text = "Bottom Sheet Content Small",
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier.padding(16.dp),
+        style = MaterialTheme.typography.h6,
+        color = MaterialTheme.colors.onSurface
     )
 }
 
 @Composable
 fun BottomSheetContentLarge() {
     Text(text = "Bottom Sheet Content Large",
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier.padding(16.dp),
+        style = MaterialTheme.typography.h6,
+        color = MaterialTheme.colors.onSurface
     )
 }
 
