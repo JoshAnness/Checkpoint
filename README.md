@@ -1,5 +1,5 @@
 # Checkpoint
-Recommend running on the Pixel 4 API 32 for testing! 
+Recommend running on the API 32 for testing! 
 ---
 
 ### Design Document
