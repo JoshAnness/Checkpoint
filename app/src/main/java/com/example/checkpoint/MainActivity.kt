@@ -1,44 +1,47 @@
 package com.example.checkpoint
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Bundle
-import android.widget.Button
 import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.mapbox.maps.*
 import com.mapbox.maps.ResourceOptionsManager
 import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.*
-import com.example.checkpoint.LocationPermissionHelper
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
+import com.example.checkpoint.extension.currentFraction
+import com.example.checkpoint.extension.noRippleClickable
+import com.example.checkpoint.ui.theme.CheckpointTheme
 import com.mapbox.android.core.location.LocationEngine
 import com.mapbox.android.gestures.MoveGestureDetector
-import com.mapbox.geojson.Feature
 import com.mapbox.geojson.Point
 import com.mapbox.maps.extension.style.expressions.dsl.generated.interpolate
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
-import com.mapbox.maps.plugin.gestures.OnMapClickListener
-import com.mapbox.maps.plugin.gestures.OnMapLongClickListener
 import com.mapbox.maps.plugin.gestures.OnMoveListener
-import com.mapbox.maps.viewannotation.ViewAnnotationManager
+import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
-import java.util.concurrent.CopyOnWriteArrayList
 
 class MainActivity : AppCompatActivity() {
 
@@ -62,7 +65,6 @@ class MainActivity : AppCompatActivity() {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().center(it).build())
         mapView.gestures.focalPoint = mapView.getMapboxMap().pixelForCoordinate(it)
     }
-
     private val onMoveListener = object : OnMoveListener {
         override fun onMoveBegin(detector: MoveGestureDetector) {
             onCameraTrackingDismissed()
@@ -79,32 +81,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
         mapView = MapView(this)
-        /*mapView.getMapboxMap().loadStyleUri(
-            Style.MAPBOX_STREETS,
-            object : Style.OnStyleLoaded {
-                override fun onStyleLoaded(style: Style) {
-                    addAnnotationToMap()
+        setContent {
+            CheckpointTheme{
+                Surface(color = MaterialTheme.colors.background){
+
                 }
+                CheckpointHome(mapView)
             }
-        )*/
-        //startButton = findViewById(R.id.startButton)
-        setContentView(mapView)
+        }
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
         locationPermissionHelper.checkPermissions {
             onMapReady()
         }
-        //mapView = findViewById(R.id.mapView)
-        /*mapView.getMapboxMap().loadStyleUri(
-            Style.MAPBOX_STREETS,
-            object : Style.OnStyleLoaded {
-                override fun onStyleLoaded(style: Style) {
-                    addAnnotationToMap()
-                }
-            }
-        )*/
-        /*startButton.setOnClickListener {
-
-        }*/
     }
 
     private fun addAnnotationToMap() {
@@ -156,6 +144,8 @@ class MainActivity : AppCompatActivity() {
                 .zoom(14.0)
                 .build()
         )
+        // change the map style depending on dark mode
+
         mapView.getMapboxMap().loadStyleUri(
             Style.MAPBOX_STREETS
         ) {
@@ -241,4 +231,135 @@ class MainActivity : AppCompatActivity() {
         locationPermissionHelper.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
+}
+
+@Composable
+private fun MapboxMapView(mapView: MapView) {
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = {
+            mapView
+        },
+        update = {
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun CheckpointHome(mapView: MapView){
+    val scope = rememberCoroutineScope()
+
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
+    )
+
+    val sheetToggle: () -> Unit = {
+        scope.launch {
+            if (scaffoldState.bottomSheetState.isCollapsed) {
+                scaffoldState.bottomSheetState.expand()
+            } else {
+                scaffoldState.bottomSheetState.collapse()
+            }
+        }
+    }
+
+    val title = "Checkpoint"
+
+    val radius = (30 * scaffoldState.currentFraction).dp
+
+    BottomSheetScaffold(
+        modifier = Modifier
+            .fillMaxSize(),
+        scaffoldState = scaffoldState,
+        sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
+        content = { MapboxMapView(mapView) },
+        drawerBackgroundColor = MaterialTheme.colors.surface,
+        sheetContent = {
+            SheetCollapsed(
+                isCollapsed = scaffoldState.bottomSheetState.isCollapsed,
+                currentFraction = scaffoldState.currentFraction,
+                onSheetClick = sheetToggle
+            ) {
+                BottomSheetContentSmall()
+            }
+            SheetExpanded{
+                BottomSheetContentLarge()
+            }
+        },
+        sheetPeekHeight = 80.dp
+    )
+}
+
+@Composable
+fun BottomSheetContentSmall() {
+    Text(
+        text = "Bottom Sheet Content Small",
+        modifier = Modifier.padding(16.dp),
+        style = MaterialTheme.typography.h6,
+        color = MaterialTheme.colors.onSurface
+    )
+}
+
+@Composable
+fun BottomSheetContentLarge() {
+    Text(text = "Bottom Sheet Content Large",
+        modifier = Modifier.padding(16.dp),
+        style = MaterialTheme.typography.h6,
+        color = MaterialTheme.colors.onSurface
+    )
+}
+
+@Composable
+fun SheetCollapsed(
+    isCollapsed: Boolean,
+    currentFraction: Float,
+    onSheetClick: () -> Unit,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .background(MaterialTheme.colors.primary)
+            .graphicsLayer(alpha = 1f - currentFraction)
+            .noRippleClickable(
+                onClick = onSheetClick,
+                enabled = isCollapsed
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colors.primary)
+            .height(400.dp)
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun TopBar() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .background(MaterialTheme.colors.primary)
+            .graphicsLayer(alpha = 0.5f)
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "Checkpoint",
+            style = MaterialTheme.typography.h6,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp)
+        )
+    }
 }
