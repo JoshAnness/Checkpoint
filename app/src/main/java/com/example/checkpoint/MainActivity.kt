@@ -144,6 +144,8 @@ class MainActivity : AppCompatActivity() {
                 .zoom(14.0)
                 .build()
         )
+        // change the map style depending on dark mode
+
         mapView.getMapboxMap().loadStyleUri(
             Style.MAPBOX_STREETS
         ) {
@@ -267,15 +269,13 @@ fun CheckpointHome(mapView: MapView){
     val radius = (30 * scaffoldState.currentFraction).dp
 
     BottomSheetScaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize(),
         scaffoldState = scaffoldState,
         sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
-        topBar = { TopBar() },
         content = { MapboxMapView(mapView) },
+        drawerBackgroundColor = MaterialTheme.colors.surface,
         sheetContent = {
-            SheetExpanded{
-                BottomSheetContentLarge()
-            }
             SheetCollapsed(
                 isCollapsed = scaffoldState.bottomSheetState.isCollapsed,
                 currentFraction = scaffoldState.currentFraction,
@@ -283,8 +283,11 @@ fun CheckpointHome(mapView: MapView){
             ) {
                 BottomSheetContentSmall()
             }
+            SheetExpanded{
+                BottomSheetContentLarge()
+            }
         },
-        sheetPeekHeight = 72.dp
+        sheetPeekHeight = 80.dp
     )
 }
 
@@ -334,8 +337,9 @@ fun SheetCollapsed(
 fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .background(MaterialTheme.colors.primary)
+            .height(400.dp)
     ) {
         content()
     }
