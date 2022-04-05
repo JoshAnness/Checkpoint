@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.location.Location
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -13,6 +12,7 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -31,7 +31,6 @@ import com.mapbox.maps.plugin.locationcomponent.*
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
-import com.mapbox.android.core.location.LocationEngine
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
 import com.mapbox.maps.extension.style.expressions.dsl.generated.interpolate
@@ -46,14 +45,6 @@ import java.lang.ref.WeakReference
 class MainActivity : AppCompatActivity() {
 
     private lateinit var mapView: MapView
-    //private lateinit var startButton: Button
-    private lateinit var mapboxMap: MapboxMap
-
-    private lateinit var originLocation: Location
-    private lateinit var originPosition: Point
-    private lateinit var destinationPosition: Point
-
-    private var LocationEngine : LocationEngine? = null
 
     private lateinit var locationPermissionHelper: LocationPermissionHelper
 
@@ -144,8 +135,6 @@ class MainActivity : AppCompatActivity() {
                 .zoom(14.0)
                 .build()
         )
-        // change the map style depending on dark mode
-
         mapView.getMapboxMap().loadStyleUri(
             Style.MAPBOX_STREETS
         ) {
@@ -198,30 +187,6 @@ class MainActivity : AppCompatActivity() {
         mapView.gestures.removeOnMoveListener(onMoveListener)
     }
 
-    override fun onStart() {
-        super.onStart()
-        mapView.onStart()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        mapView.onStop()
-    }
-
-    override fun onLowMemory() {
-        super.onLowMemory()
-        mapView.onLowMemory()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mapView.location
-            .removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
-        mapView.location
-            .removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
-        mapView.gestures.removeOnMoveListener(onMoveListener)
-    }
-
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -263,8 +228,6 @@ fun CheckpointHome(mapView: MapView){
             }
         }
     }
-
-    val title = "Checkpoint"
 
     val radius = (30 * scaffoldState.currentFraction).dp
 
