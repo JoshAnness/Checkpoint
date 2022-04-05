@@ -344,22 +344,3 @@ fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
         content()
     }
 }
-
-@Composable
-fun TopBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp)
-            .background(MaterialTheme.colors.primary)
-            .graphicsLayer(alpha = 0.5f)
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "Checkpoint",
-            style = MaterialTheme.typography.h6,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp)
-        )
-    }
-}
