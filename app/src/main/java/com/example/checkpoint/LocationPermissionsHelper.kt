@@ -24,6 +24,10 @@ class LocationPermissionHelper(val activity: WeakReference<Activity>) {
                 override fun onPermissionResult(granted: Boolean) {
                     if (granted) {
                         onMapReady()
+                        Toast.makeText(
+                            activity.get(), "Using your current location. ",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
                         activity.get()?.finish()
                     }

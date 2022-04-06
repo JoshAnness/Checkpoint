@@ -1,6 +1,7 @@
 package com.example.checkpoint
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
@@ -21,6 +22,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.mapbox.maps.*
@@ -223,7 +225,9 @@ fun CheckpointHome(mapView: MapView){
         scope.launch {
             if (scaffoldState.bottomSheetState.isCollapsed) {
                 scaffoldState.bottomSheetState.expand()
-            } else {
+            }
+
+            else {
                 scaffoldState.bottomSheetState.collapse()
             }
         }
@@ -268,7 +272,7 @@ fun BottomSheetContentSmall() {
 fun BottomSheetContentLarge() {
     Text(text = "Bottom Sheet Content Large",
         modifier = Modifier.padding(16.dp),
-        style = MaterialTheme.typography.h6,
+        style = MaterialTheme.typography.h4,
         color = MaterialTheme.colors.onSurface
     )
 }
@@ -305,5 +309,17 @@ fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
             .height(400.dp)
     ) {
         content()
+    }
+}
+
+@Preview(name = "Light Mode" , showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, name = "Dark Mode")
+@Composable
+fun DefaultPreview() {
+    CheckpointTheme {
+        Surface(color = MaterialTheme.colors.background,
+            modifier = Modifier.fillMaxWidth()){
+
+        }
     }
 }

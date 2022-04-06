@@ -8,8 +8,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import retrofit2.awaitResponse
 
-class WeatherService {
-    suspend fun fetchWeather(): WeatherAPI{
+interface IWeatherService {
+    suspend fun fetchWeather(): WeatherAPI
+}
+
+class WeatherService : IWeatherService {
+    override suspend fun fetchWeather(): WeatherAPI{
         return withContext(Dispatchers.IO){
             val service = RetrofitClientWeatherAPI.retrofitInstance?.create(IWeather :: class.java)
             val weather = async{ service?.getAllWeather()}
