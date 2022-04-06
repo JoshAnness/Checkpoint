@@ -17,8 +17,8 @@ class WeatherService : IWeatherService {
         return withContext(Dispatchers.IO){
             val service = RetrofitClientWeatherAPI.retrofitInstance?.create(IWeather :: class.java)
             val weather = async{ service?.getAllWeather()}
-            val result = weather.await()?.awaitResponse()?.body()!!
-            return@withContext result
+            val result = weather.let { weather.await()?.awaitResponse()?.body() }
+            return@withContext result!!
         }
     }
 

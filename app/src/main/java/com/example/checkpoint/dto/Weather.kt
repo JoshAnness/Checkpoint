@@ -5,4 +5,9 @@ data class Weather (
     val main: String,
     val description: String,
     val icon: String
-)
+){
+    private var CurrentWeather = main + " " + id + " " + description + " " + icon
+    override fun toString() : String {
+        return CurrentWeather
+    }
+}
