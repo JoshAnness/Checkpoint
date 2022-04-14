@@ -12,38 +12,43 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.mapbox.maps.*
-import com.mapbox.maps.ResourceOptionsManager
-import com.mapbox.maps.Style
-import com.mapbox.maps.plugin.gestures.gestures
-import com.mapbox.maps.plugin.locationcomponent.*
+import com.example.checkpoint.dto.WeatherAPI
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.MapView
+import com.mapbox.maps.ResourceOptionsManager
+import com.mapbox.maps.Style
 import com.mapbox.maps.extension.style.expressions.dsl.generated.interpolate
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.OnMoveListener
+import com.mapbox.maps.plugin.gestures.gestures
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
+import com.mapbox.maps.plugin.locationcomponent.location
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 
 class MainActivity : AppCompatActivity() {
-
+    private lateinit var viewModel: MainViewModel
     private lateinit var mapView: MapView
 
     private lateinit var locationPermissionHelper: LocationPermissionHelper
@@ -73,6 +78,8 @@ class MainActivity : AppCompatActivity() {
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
         mapView = MapView(this)
         setContent {
+            viewModel.fetchWeather()
+            val weather by viewModel.weather.observeAsState(initial = emptyList<WeatherAPI>())
             CheckpointTheme{
                 Surface(color = MaterialTheme.colors.background){
 
@@ -254,9 +261,13 @@ fun CheckpointHome(mapView: MapView){
     )
 }
 
+private lateinit var viewModel: MainViewModel
 @Composable
 fun BottomSheetContentSmall() {
+    val currentWeather = viewModel.fetchWeather()
+
     Text(
+
         text = "Bottom Sheet Content Small",
         modifier = Modifier.padding(16.dp),
         style = MaterialTheme.typography.h6,
@@ -266,6 +277,7 @@ fun BottomSheetContentSmall() {
 
 @Composable
 fun BottomSheetContentLarge() {
+
     Text(text = "Bottom Sheet Content Large",
         modifier = Modifier.padding(16.dp),
         style = MaterialTheme.typography.h6,
@@ -307,3 +319,4 @@ fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
         content()
     }
 }
+
