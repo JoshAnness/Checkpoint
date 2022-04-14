@@ -7,6 +7,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.location.Address
 import android.location.Geocoder
+import android.os.AsyncTask
 import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
@@ -56,8 +57,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var locationPermissionHelper: LocationPermissionHelper
 
-    val city: String = "Cincinnati"
-    val API: String = "5faf2a035a52f392a0394d9a48bc16be"
+    var weatherURL : String = ""
+    var weatherAPI : String = "5faf2a035a52f392a0394d9a48bc16be"
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -83,7 +84,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
         mapView = MapView(this)
-        weatherTask().execute()
         setContent {
             CheckpointTheme{
                 Surface(color = MaterialTheme.colors.background){
