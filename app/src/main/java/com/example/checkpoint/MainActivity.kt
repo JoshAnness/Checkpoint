@@ -31,6 +31,8 @@ import com.mapbox.maps.plugin.locationcomponent.*
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
 import com.mapbox.maps.extension.style.expressions.dsl.generated.interpolate
@@ -45,6 +47,7 @@ import java.lang.ref.WeakReference
 class MainActivity : AppCompatActivity() {
 
     private lateinit var mapView: MapView
+    private var firebaseUser: FirebaseUser? = FirebaseAuth.getInstance().currentUser
 
     private lateinit var locationPermissionHelper: LocationPermissionHelper
 
