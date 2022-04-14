@@ -3,12 +3,11 @@ package com.example.checkpoint
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-object RetrofitClientWeatherAPI {
+object RetrofitClientInstance {
     private var retrofit: Retrofit? = null
-    private  val BASE_URL = "http://api.openweathermap.org"
+    private  val BASE_URL = "https://api.openweathermap.org/data/2.5/"
 
     val retrofitInstance : Retrofit?
-
         get(){
             if(retrofit == null){
                 retrofit = retrofit2.Retrofit.Builder()
