@@ -43,10 +43,10 @@ class MainViewModel (var reportService: IReportService = ReportService()) : View
         user?.let { user ->
             val document = if (selectedDelay.delayID == null || selectedDelay.delayID.isEmpty()) {
                 // insert
-                firestore.collection("users").document(user.uid).collection("reports").document()
+                firestore.collection("users").document(user.uid).collection("delays").document()
             } else {
                 // update
-                firestore.collection("users").document(user.uid).collection("reports")
+                firestore.collection("users").document(user.uid).collection("delays")
                     .document(selectedDelay.delayID)
             }
 
@@ -61,7 +61,7 @@ class MainViewModel (var reportService: IReportService = ReportService()) : View
 
             fun listenToDelay() {
                 user?.let { user ->
-                    firestore.collection("users").document(user.uid).collection("reports")
+                    firestore.collection("users").document(user.uid).collection("delays")
                         .addSnapshotListener { snapshot, error ->
                             // see of we received an error
                             if (error != null) {
