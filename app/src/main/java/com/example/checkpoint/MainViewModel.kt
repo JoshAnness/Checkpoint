@@ -19,5 +19,4 @@ class MainViewModel(
             weather.postValue(feedbackAPI)
         }
     }
-
 }

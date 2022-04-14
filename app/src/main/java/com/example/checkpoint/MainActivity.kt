@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var viewModel: MainViewModel
+
     private lateinit var mapView: MapView
 
     private lateinit var locationPermissionHelper: LocationPermissionHelper
@@ -77,8 +77,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
         mapView = MapView(this)
+
         setContent {
-            viewModel.fetchWeather()
+
             val weather by viewModel.weather.observeAsState(initial = emptyList<WeatherAPI>())
             CheckpointTheme{
                 Surface(color = MaterialTheme.colors.background){
