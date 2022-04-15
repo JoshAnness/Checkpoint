@@ -1,7 +1,6 @@
 package com.example.checkpoint
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.example.checkpoint.dto.WeatherAPI
 import com.example.checkpoint.services.WeatherService
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

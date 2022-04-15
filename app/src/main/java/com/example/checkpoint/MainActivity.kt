@@ -1,5 +1,6 @@
 package com.example.checkpoint
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -12,7 +13,6 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -23,30 +23,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.mapbox.maps.*
-import com.mapbox.maps.ResourceOptionsManager
-import com.mapbox.maps.Style
-import com.mapbox.maps.plugin.gestures.gestures
-import com.mapbox.maps.plugin.locationcomponent.*
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
+import com.mapbox.maps.*
 import com.mapbox.maps.extension.style.expressions.dsl.generated.interpolate
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.OnMoveListener
+import com.mapbox.maps.plugin.gestures.gestures
+import com.mapbox.maps.plugin.locationcomponent.*
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
+
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var mapView: MapView
 
     private lateinit var locationPermissionHelper: LocationPermissionHelper
+
+    var weatherAPI : String = "5faf2a035a52f392a0394d9a48bc16be"
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -72,6 +76,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
         mapView = MapView(this)
+        locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
+        locationPermissionHelper.checkPermissions {
+            onMapReady()
+        }
+        /*btnGetWeather.setOnClickListener{
+            getLocation()
+        }*/
+
         setContent {
             CheckpointTheme{
                 Surface(color = MaterialTheme.colors.background){
@@ -80,10 +92,7 @@ class MainActivity : AppCompatActivity() {
                 CheckpointHome(mapView)
             }
         }
-        locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
-        locationPermissionHelper.checkPermissions {
-            onMapReady()
-        }
+
     }
 
     private fun addAnnotationToMap() {
