@@ -8,6 +8,6 @@ import retrofit2.http.Query
 interface IWeatherDAO {
 
     @GET("/weather?")
-    fun getWeather(@Query("lon") lon: String, @Query("lat") lat: String) : Call<ArrayList<Weather>>
+    fun getWeather(@Query("lon") lon: String, @Query("lat") lat: String) : Weather
 
 }
