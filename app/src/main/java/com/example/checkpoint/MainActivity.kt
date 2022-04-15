@@ -1,18 +1,12 @@
 package com.example.checkpoint
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.location.Address
-import android.location.Geocoder
-import android.os.AsyncTask
 import android.os.Bundle
-import android.view.View
-import android.widget.ProgressBar
-import android.widget.RelativeLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
@@ -32,6 +26,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
 import com.mapbox.maps.*
@@ -44,11 +41,7 @@ import com.mapbox.maps.plugin.gestures.OnMoveListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.*
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.lang.ref.WeakReference
-import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -57,7 +50,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var locationPermissionHelper: LocationPermissionHelper
 
-    var weatherURL : String = ""
     var weatherAPI : String = "5faf2a035a52f392a0394d9a48bc16be"
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
@@ -84,6 +76,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
         mapView = MapView(this)
+        locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
+        locationPermissionHelper.checkPermissions {
+            onMapReady()
+        }
+        /*btnGetWeather.setOnClickListener{
+            getLocation()
+        }*/
+
         setContent {
             CheckpointTheme{
                 Surface(color = MaterialTheme.colors.background){
@@ -92,10 +92,7 @@ class MainActivity : AppCompatActivity() {
                 CheckpointHome(mapView)
             }
         }
-        locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
-        locationPermissionHelper.checkPermissions {
-            onMapReady()
-        }
+
     }
 
     private fun addAnnotationToMap() {
