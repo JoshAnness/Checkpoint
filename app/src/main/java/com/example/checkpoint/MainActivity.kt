@@ -7,7 +7,6 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
@@ -50,14 +49,16 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.lang.ref.WeakReference
-import androidx.databinding.DataBindingUtil
 import com.example.checkpoint.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
     private lateinit var IWeatherMain : IWeather
     private lateinit var binding: ActivityMainBinding
     private lateinit var locationPermissionHelper: LocationPermissionHelper
+    private var IWeatherResponse : String? = null
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -84,13 +85,14 @@ class MainActivity : AppCompatActivity() {
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
         mapView = MapView(this)
         IWeatherMain = ApiUtils.apiService
+
         setContent {
 
             CheckpointTheme{
                 Surface(color = MaterialTheme.colors.background){
 
                 }
-                CheckpointHome(mapView)
+                CheckpointHome(mapView, IWeatherResponse)
             }
         }
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
@@ -98,6 +100,7 @@ class MainActivity : AppCompatActivity() {
             onMapReady()
         }
     }
+
     override fun onStart() {
         super.onStart()
         IWeatherMain.getAllWeather().enqueue(object : Callback<WeatherAPI> {
@@ -133,6 +136,9 @@ class MainActivity : AppCompatActivity() {
                 "\n" +
                 "Pressure: " +
                 weatherResponse.main.pressure
+
+                IWeatherResponse = stringBuilder
+
 
     }
     private fun addAnnotationToMap() {
@@ -261,7 +267,7 @@ private fun MapboxMapView(mapView: MapView) {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun CheckpointHome(mapView: MapView){
+fun CheckpointHome(mapView: MapView, IWeatherResponse: String?){
     val scope = rememberCoroutineScope()
 
     val scaffoldState = rememberBottomSheetScaffoldState(
@@ -293,7 +299,7 @@ fun CheckpointHome(mapView: MapView){
                 currentFraction = scaffoldState.currentFraction,
                 onSheetClick = sheetToggle
             ) {
-                BottomSheetContentSmall("")
+                BottomSheetContentSmall(IWeatherResponse)
             }
             SheetExpanded{
                 BottomSheetContentLarge()
@@ -304,11 +310,11 @@ fun CheckpointHome(mapView: MapView){
 }
 
 @Composable
-fun BottomSheetContentSmall(weather: Any) {
+fun BottomSheetContentSmall(IWeatherResponse: String?) {
 
     Text(
 
-        text = "Bottom Sheet Content Small" +weather.toString() ,
+        text = "Bottom Sheet Content Small" +IWeatherResponse ,
         modifier = Modifier.padding(16.dp),
         style = MaterialTheme.typography.h6,
         color = MaterialTheme.colors.onSurface
