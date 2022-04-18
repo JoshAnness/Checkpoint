@@ -8,9 +8,7 @@ import com.example.checkpoint.services.IWeatherService
 import com.example.checkpoint.services.WeatherService
 import kotlinx.coroutines.launch
 
-class MainViewModel(
-    val weatherService: IWeatherService = WeatherService())
-    : ViewModel(){
+class MainViewModel(var weatherService: IWeatherService = WeatherService()) : ViewModel(){
 
     val weather: MutableLiveData<WeatherAPI> = MutableLiveData<WeatherAPI>()
     fun fetchWeather(){

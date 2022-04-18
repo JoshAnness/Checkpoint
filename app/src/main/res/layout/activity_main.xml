@@ -13,7 +13,15 @@
         mapbox:mapbox_cameraZoom="9.0"
         mapbox:mapbox_locationComponentEnabled = "true"
         tools:context=".examples.LocationComponentActivity"
-        />
+        >
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="TextView" />
+
+    </com.mapbox.maps.MapView>
 
     <Button
         android:id="@+id/startButton"

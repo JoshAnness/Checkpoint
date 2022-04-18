@@ -3,11 +3,12 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="..\:/Users/Brendan/OneDrive - University of Cincinnati/2021-2022/SPRING 2022/IT 3048C - MOBILE DEVICE PROGRAMMING/Checkpoint/app/src/main/res/layout/activity_maps.xml" value="0.4121376811594203" />
+        <entry key="..\:/Users/annes/AndroidStudioProjects/Checkpoint/app/src/main/res/drawable/gradient_bg.xml" value="0.205" />
         <entry key="..\:/Users/annes/AndroidStudioProjects/Checkpoint/app/src/main/res/layout/activity_main.xml" value="0.246875" />
+        <entry key="..\:/Users/annes/AndroidStudioProjects/Checkpoint/app/src/main/res/layout/weather_layout.xml" value="0.2708333333333333" />
         <entry key="..\:/Users/sonyc/AndroidStudioProjects/Checkpoint/app/src/main/res/drawable/ic_launcher_background.xml" value="0.121" />
-        <entry key="..\:/Users/sonyc/AndroidStudioProjects/Checkpoint/app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="..\:/Users/sonyc/AndroidStudioProjects/Checkpoint/app/src/main/res/layout/activity_maps.xml" value="0.33" />
+        <entry key="..\:/Users/sonyc/AndroidStudioProjects/Checkpoint65/app/src/main/res/layout/activity_main.xml" value="0.17831813576494426" />
       </map>
     </option>
   </component>

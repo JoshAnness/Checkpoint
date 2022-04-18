@@ -13,13 +13,22 @@ object RetrofitClientWeatherAPI {
             if(retrofit == null){
                 retrofit = retrofit2.Retrofit.Builder()
                     .baseUrl(BASE_URL)
-
                     .addConverterFactory(GsonConverterFactory.create())
                     .build()
+
 
             }
             return retrofit
         }
-
+    fun getClient(baseUrl:String):Retrofit {
+        if (retrofit == null)
+        {
+            retrofit = Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+        }
+        return retrofit!!
+    }
 
 }
