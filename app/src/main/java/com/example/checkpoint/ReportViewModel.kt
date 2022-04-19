@@ -17,7 +17,7 @@ import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.launch
 
-class MainViewModel (var reportService: IReportService = ReportService()) : ViewModel() {
+class ReportViewModel (var reportService: IReportService = ReportService()) : ViewModel() {
     var user: User? = null
     val reports: MutableLiveData<List<Report>> = MutableLiveData<List<Report>>()
     val delays: MutableLiveData<List<Delay>> = MutableLiveData<List<Delay>>()

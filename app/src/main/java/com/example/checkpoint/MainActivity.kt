@@ -13,13 +13,10 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +52,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 class MainActivity : AppCompatActivity() {
 
     private lateinit var mapView: MapView
-    private val viewModel: MainViewModel by viewModel<MainViewModel>()
+    private val viewModel: ReportViewModel by viewModel<ReportViewModel>()
     private var firebaseUser: FirebaseUser? = FirebaseAuth.getInstance().currentUser
 
     private lateinit var locationPermissionHelper: LocationPermissionHelper
