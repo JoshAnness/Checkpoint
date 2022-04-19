@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var locationPermissionHelper: LocationPermissionHelper
     private var IWeatherResponse : String by mutableStateOf("")
-
+    private var IWeatherResponseSmall : String by mutableStateOf("")
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
     }
@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
                 Surface(color = MaterialTheme.colors.background){
 
                 }
-                CheckpointHome(mapView, IWeatherResponse)
+                CheckpointHome(mapView, IWeatherResponse, IWeatherResponseSmall)
             }
         }
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
     }
     @Override
     private fun buildResponse(weatherResponse: WeatherAPI?) {
-        val temperature = weatherResponse?.main!!.temp
+        val temperature = weatherResponse?.sys!!.country+ " temperature is currently "+ weatherResponse?.main!!.temp.toString()
         val stringBuilder = "Country: " +
                 weatherResponse.sys.country +
                 "\n" +
@@ -135,7 +135,7 @@ class MainActivity : AppCompatActivity() {
                 "\n" +
                 "Pressure: " +
                 weatherResponse.main.pressure
-
+                IWeatherResponseSmall = temperature
                 IWeatherResponse = stringBuilder
 
 
@@ -253,7 +253,7 @@ class MainActivity : AppCompatActivity() {
 }
 
 @Composable
-private fun MapboxMapView(mapView: MapView, IWeatherResponse: String?) {
+private fun MapboxMapView(mapView: MapView, IWeatherResponse: String?, IWeatherResponseSmall: String) {
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = {
@@ -262,13 +262,14 @@ private fun MapboxMapView(mapView: MapView, IWeatherResponse: String?) {
         },
         update = {
             IWeatherResponse
+            IWeatherResponseSmall
         }
     )
 }
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun CheckpointHome(mapView: MapView, IWeatherResponse: String?){
+fun CheckpointHome(mapView: MapView, IWeatherResponse: String?, IWeatherResponseSmall: String){
     val scope = rememberCoroutineScope()
 
     val scaffoldState = rememberBottomSheetScaffoldState(
@@ -292,7 +293,7 @@ fun CheckpointHome(mapView: MapView, IWeatherResponse: String?){
             .fillMaxSize(),
         scaffoldState = scaffoldState,
         sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
-        content = { MapboxMapView(mapView, IWeatherResponse) },
+        content = { MapboxMapView(mapView, IWeatherResponse, IWeatherResponseSmall) },
         drawerBackgroundColor = MaterialTheme.colors.surface,
         sheetContent = {
             SheetCollapsed(
@@ -300,7 +301,7 @@ fun CheckpointHome(mapView: MapView, IWeatherResponse: String?){
                 currentFraction = scaffoldState.currentFraction,
                 onSheetClick = sheetToggle
             ) {
-                BottomSheetContentSmall(IWeatherResponse)
+                BottomSheetContentSmall(IWeatherResponseSmall)
             }
             SheetExpanded{
                 BottomSheetContentLarge(IWeatherResponse)
@@ -311,12 +312,12 @@ fun CheckpointHome(mapView: MapView, IWeatherResponse: String?){
 }
 
 @Composable
-fun BottomSheetContentSmall(IWeatherResponse: String?) {
+fun BottomSheetContentSmall(IWeatherResponseSmall: String) {
 
-    if (IWeatherResponse != null) {
+    if (IWeatherResponseSmall != null) {
         Text(
 
-            text =  IWeatherResponse ,
+            text =  IWeatherResponseSmall ,
             modifier = Modifier.padding(16.dp),
             style = MaterialTheme.typography.h6,
             color = MaterialTheme.colors.onSurface
