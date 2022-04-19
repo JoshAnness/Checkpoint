@@ -1,22 +1,26 @@
 package com.example.checkpoint.services
 
-import com.example.checkpoint.RetrofitClientInstance
-import com.example.checkpoint.dao.IWeatherDAO
-import com.example.checkpoint.dto.Weather
+import com.example.checkpoint.RetrofitClientWeatherAPI
+import com.example.checkpoint.dao.IWeather
+import com.example.checkpoint.dto.WeatherAPI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import retrofit2.awaitResponse
 
-class WeatherService {
-
-    /*internal suspend fun fetchWeather(): Weather {
-        withContext(Dispatchers.IO){
-            val service = RetrofitClientInstance.retrofitInstance?.create(IWeatherDAO::class.java)
-            val weather = async{ service?.getWeather()}
-            val result = weather.await()?.awaitResponse()?.body()!!
+interface IWeatherService {
+    suspend fun fetchWeather(): WeatherAPI?
+}
+class WeatherService : IWeatherService {
+    override suspend fun fetchWeather(): WeatherAPI?{
+        return withContext(Dispatchers.IO){
+            val service = RetrofitClientWeatherAPI.retrofitInstance?.create(IWeather :: class.java)
+            val weather = async{ service?.getAllWeather()}
+            val result = weather.await()?.awaitResponse()?.body()
             return@withContext result
         }
-    }*/
+    }
+
+
 
 }
