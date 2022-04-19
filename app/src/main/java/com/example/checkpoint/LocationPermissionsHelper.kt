@@ -1,7 +1,10 @@
 package com.example.checkpoint
 
+import android.Manifest
 import android.app.Activity
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.core.content.ContextCompat
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
 import java.lang.ref.WeakReference

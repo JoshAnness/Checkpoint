@@ -1,14 +1,16 @@
 package com.example.checkpoint
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
@@ -16,46 +18,51 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.checkpoint.dto.User
-import com.mapbox.maps.*
-import com.mapbox.maps.ResourceOptionsManager
-import com.mapbox.maps.Style
-import com.mapbox.maps.plugin.gestures.gestures
-import com.mapbox.maps.plugin.locationcomponent.*
+import androidx.core.content.ContextCompat
+import com.example.checkpoint.dao.ApiUtils
+import com.example.checkpoint.dao.IWeather
+import com.example.checkpoint.dto.WeatherAPI
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
-import com.firebase.ui.auth.AuthUI
-import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
-import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.MapView
+import com.mapbox.maps.ResourceOptionsManager
+import com.mapbox.maps.Style
 import com.mapbox.maps.extension.style.expressions.dsl.generated.interpolate
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.OnMoveListener
+import com.mapbox.maps.plugin.gestures.gestures
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
+import com.mapbox.maps.plugin.locationcomponent.location
 import kotlinx.coroutines.launch
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.lang.ref.WeakReference
-import org.koin.androidx.viewmodel.ext.android.viewModel
+
 
 class MainActivity : AppCompatActivity() {
-
+    private lateinit var permmissionLauncher: ActivityResultLauncher<Array<String>>
+    private var isLocationPermissionGranted = false
     private lateinit var mapView: MapView
-    private val viewModel: ReportViewModel by viewModel<ReportViewModel>()
-    private var firebaseUser: FirebaseUser? = FirebaseAuth.getInstance().currentUser
-
+    private lateinit var IWeatherMain : IWeather
     private lateinit var locationPermissionHelper: LocationPermissionHelper
+    private var IWeatherResponse : String by mutableStateOf("")
+    private var IWeatherResponseSmall : String by mutableStateOf("")
+    var weatherAPI : String = "5faf2a035a52f392a0394d9a48bc16be"
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -81,18 +88,65 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
         mapView = MapView(this)
+        IWeatherMain = ApiUtils.apiService
+        locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
+        locationPermissionHelper.checkPermissions {
+            onMapReady()
+        }
+        /*btnGetWeather.setOnClickListener{
+            getLocation()
+        }*/
+
         setContent {
             CheckpointTheme{
                 Surface(color = MaterialTheme.colors.background){
 
                 }
-                CheckpointHome(mapView)
+                CheckpointHome(mapView, IWeatherResponseSmall, IWeatherResponse)
             }
         }
-        locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
-        locationPermissionHelper.checkPermissions {
-            onMapReady()
-        }
+
+    }
+    override fun onStart() {
+        super.onStart()
+        IWeatherMain.getAllWeather().enqueue(object : Callback<WeatherAPI> {
+            override fun onResponse(call: Call<WeatherAPI>, response: Response<WeatherAPI>) {
+                if (response.code()==200){
+
+                    buildResponse(response.body())
+                }
+            }
+
+            override fun onFailure(call: Call<WeatherAPI>, t: Throwable) {
+
+            }
+
+        })
+    }
+    @Override
+    private fun buildResponse(weatherResponse: WeatherAPI?) {
+        val temperature = weatherResponse?.sys!!.country+ " temperature is currently "+ weatherResponse?.main!!.temp.toString()
+        val stringBuilder = "Country: " +
+                weatherResponse.sys.country +
+                "\n" +
+                "Temperature: " +
+                weatherResponse.main.temp +
+                "\n" +
+                "Temperature(Min): " +
+                weatherResponse.main.tempMin +
+                "\n" +
+                "Temperature(Max): " +
+                weatherResponse.main.tempMax+
+                "\n" +
+                "Humidity: " +
+                weatherResponse.main.humidity +
+                "\n" +
+                "Pressure: " +
+                weatherResponse.main.pressure
+        IWeatherResponseSmall = temperature
+        IWeatherResponse = stringBuilder
+
+
     }
 
     private fun addAnnotationToMap() {
@@ -201,27 +255,44 @@ class MainActivity : AppCompatActivity() {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
+        requestPermission()
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         locationPermissionHelper.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
+    private fun requestPermission(){
+        isLocationPermissionGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val permissionRequest : MutableList<String> = ArrayList()
 
+        if(!isLocationPermissionGranted){
+            permissionRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if(permissionRequest.isNotEmpty()){
+            permmissionLauncher.launch(permissionRequest.toTypedArray())
+        }
+    }
 
+}
 
 @Composable
-private fun MapboxMapView(mapView: MapView) {
+private fun MapboxMapView(mapView: MapView, IWeatherResponseSmall: String,IWeatherResponse: String) {
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = {
             mapView
         },
         update = {
+            IWeatherResponse
+            IWeatherResponseSmall
         }
     )
 }
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun CheckpointHome(mapView: MapView){
+fun CheckpointHome(mapView: MapView, IWeatherResponseSmall: String, IWeatherResponse: String){
     val scope = rememberCoroutineScope()
 
     val scaffoldState = rememberBottomSheetScaffoldState(
@@ -245,7 +316,7 @@ fun CheckpointHome(mapView: MapView){
             .fillMaxSize(),
         scaffoldState = scaffoldState,
         sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
-        content = { MapboxMapView(mapView) },
+        content = { MapboxMapView(mapView,IWeatherResponseSmall,IWeatherResponse) },
         drawerBackgroundColor = MaterialTheme.colors.surface,
         sheetContent = {
             SheetCollapsed(
@@ -253,10 +324,10 @@ fun CheckpointHome(mapView: MapView){
                 currentFraction = scaffoldState.currentFraction,
                 onSheetClick = sheetToggle
             ) {
-                BottomSheetContentSmall()
+                BottomSheetContentSmall(IWeatherResponseSmall)
             }
             SheetExpanded{
-                BottomSheetContentLarge()
+                BottomSheetContentLarge(IWeatherResponse)
             }
         },
         sheetPeekHeight = 80.dp
@@ -264,9 +335,9 @@ fun CheckpointHome(mapView: MapView){
 }
 
 @Composable
-fun BottomSheetContentSmall() {
+fun BottomSheetContentSmall(IWeatherResponseSmall: String) {
     Text(
-        text = "Bottom Sheet Content Small",
+        text = IWeatherResponseSmall,
         modifier = Modifier.padding(16.dp),
         style = MaterialTheme.typography.h6,
         color = MaterialTheme.colors.onSurface
@@ -274,56 +345,13 @@ fun BottomSheetContentSmall() {
 }
 
 @Composable
-fun BottomSheetContentLarge() {
-    Text(text = "Bottom Sheet Content Large",
+fun BottomSheetContentLarge(IWeatherResponse: String) {
+    Text(text = IWeatherResponse,
         modifier = Modifier.padding(16.dp),
         style = MaterialTheme.typography.h6,
         color = MaterialTheme.colors.onSurface
     )
-    Button (
-        onClick = {
-            signIn()
-        }
-    ) {
-
-        Text(text = "Logon")
-    }
 }
-    private fun signIn() {
-        val providers = arrayListOf(
-            AuthUI.IdpConfig.EmailBuilder().build(),
-            AuthUI.IdpConfig.GoogleBuilder().build()
-        )
-        val signinIntent = AuthUI.getInstance()
-            .createSignInIntentBuilder()
-            .setAvailableProviders(providers)
-            .build()
-
-        signInLauncher.launch(signinIntent)
-    }
-
-    private val signInLauncher = registerForActivityResult (
-        FirebaseAuthUIActivityResultContract()
-    ) {
-            res -> this.signInResult(res)
-    }
-
-
-    private fun signInResult(result: FirebaseAuthUIAuthenticationResult) {
-        val response = result.idpResponse
-        if (result.resultCode == AppCompatActivity.RESULT_OK) {
-            firebaseUser = FirebaseAuth.getInstance().currentUser
-            firebaseUser?.let {
-                val user = User(it.uid, it.displayName)
-                viewModel.user = user
-                viewModel.saveUser()
-                viewModel.listenToDelay()
-            }
-        } else {
-            Log.e("MainActivity.kt", "Error logging in " + response?.error?.errorCode)
-
-        }
-    }
 
 @Composable
 fun SheetCollapsed(
@@ -358,6 +386,4 @@ fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
     ) {
         content()
     }
-
-}
 }

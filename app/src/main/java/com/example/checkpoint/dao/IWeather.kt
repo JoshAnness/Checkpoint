@@ -1,6 +1,7 @@
 package com.example.checkpoint.dao
 
 import com.example.checkpoint.dto.WeatherAPI
+import retrofit2.Call
 import retrofit2.http.GET
 
 
@@ -20,9 +21,9 @@ interface IWeather {
 //set(value) = TODO("I wish I knew")
 
 //@GET(websiteLink)
-@GET("/data/2.5/weather?lat=35&lon=139&appid=69702e05c2554c21cf44563eb81ea624")
+@GET("/data/2.5/weather?lat=39&lon=-85&appid=69702e05c2554c21cf44563eb81ea624")
 
-fun getAllWeather() : retrofit2.Call<WeatherAPI>
+fun getAllWeather() : Call<WeatherAPI>
 
 
 }

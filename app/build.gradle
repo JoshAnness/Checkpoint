@@ -96,5 +96,11 @@ dependencies {
     testImplementation 'android.arch.core:core-testing:1.1.1'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0'
 
+    // Weather
+    implementation 'com.android.volley:volley:1.1.1'
+    implementation "io.insert-koin:koin-android:3.1.4"
+
+    implementation 'androidx.activity:activity-ktx:1.4.0'
+    implementation 'androidx.fragment:fragment-ktx:1.4.1'
 
 }
