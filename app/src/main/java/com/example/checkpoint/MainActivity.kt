@@ -15,8 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -24,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.checkpoint.dao.ApiUtils
 import com.example.checkpoint.dao.IWeather
+import com.example.checkpoint.databinding.ActivityMainBinding
 import com.example.checkpoint.dto.WeatherAPI
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
@@ -49,16 +49,13 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.lang.ref.WeakReference
-import com.example.checkpoint.databinding.ActivityMainBinding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
     private lateinit var IWeatherMain : IWeather
     private lateinit var binding: ActivityMainBinding
     private lateinit var locationPermissionHelper: LocationPermissionHelper
-    private var IWeatherResponse : String? = null
+    private var IWeatherResponse : String by mutableStateOf("")
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -85,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
         mapView = MapView(this)
         IWeatherMain = ApiUtils.apiService
+
 
         setContent {
 
@@ -117,6 +115,7 @@ class MainActivity : AppCompatActivity() {
 
         })
     }
+    @Override
     private fun buildResponse(weatherResponse: WeatherAPI?) {
         val temperature = weatherResponse?.main!!.temp
         val stringBuilder = "Country: " +
@@ -254,13 +253,15 @@ class MainActivity : AppCompatActivity() {
 }
 
 @Composable
-private fun MapboxMapView(mapView: MapView) {
+private fun MapboxMapView(mapView: MapView, IWeatherResponse: String?) {
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = {
             mapView
+
         },
         update = {
+            IWeatherResponse
         }
     )
 }
@@ -291,7 +292,7 @@ fun CheckpointHome(mapView: MapView, IWeatherResponse: String?){
             .fillMaxSize(),
         scaffoldState = scaffoldState,
         sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
-        content = { MapboxMapView(mapView) },
+        content = { MapboxMapView(mapView, IWeatherResponse) },
         drawerBackgroundColor = MaterialTheme.colors.surface,
         sheetContent = {
             SheetCollapsed(
@@ -302,7 +303,7 @@ fun CheckpointHome(mapView: MapView, IWeatherResponse: String?){
                 BottomSheetContentSmall(IWeatherResponse)
             }
             SheetExpanded{
-                BottomSheetContentLarge()
+                BottomSheetContentLarge(IWeatherResponse)
             }
         },
         sheetPeekHeight = 80.dp
@@ -312,23 +313,27 @@ fun CheckpointHome(mapView: MapView, IWeatherResponse: String?){
 @Composable
 fun BottomSheetContentSmall(IWeatherResponse: String?) {
 
-    Text(
+    if (IWeatherResponse != null) {
+        Text(
 
-        text = "Bottom Sheet Content Small" +IWeatherResponse ,
-        modifier = Modifier.padding(16.dp),
-        style = MaterialTheme.typography.h6,
-        color = MaterialTheme.colors.onSurface
-    )
+            text =  IWeatherResponse ,
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.h6,
+            color = MaterialTheme.colors.onSurface
+        )
+    }
 }
 
 @Composable
-fun BottomSheetContentLarge() {
+fun BottomSheetContentLarge(IWeatherResponse: String?) {
 
-    Text(text = "Bottom Sheet Content Large",
-        modifier = Modifier.padding(16.dp),
-        style = MaterialTheme.typography.h6,
-        color = MaterialTheme.colors.onSurface
-    )
+    if (IWeatherResponse != null) {
+        Text(text = IWeatherResponse,
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.h6,
+            color = MaterialTheme.colors.onSurface
+        )
+    }
 }
 
 @Composable
