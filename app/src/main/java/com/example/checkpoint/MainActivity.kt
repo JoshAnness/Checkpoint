@@ -7,6 +7,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.location.Location
+import android.location.LocationManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.checkpoint.dao.ApiUtils
 import com.example.checkpoint.dao.IWeather
@@ -31,6 +34,8 @@ import com.example.checkpoint.dto.WeatherAPI
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
@@ -62,7 +67,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var locationPermissionHelper: LocationPermissionHelper
     private var IWeatherResponse : String by mutableStateOf("")
     private var IWeatherResponseSmall : String by mutableStateOf("")
-    var weatherAPI : String = "5faf2a035a52f392a0394d9a48bc16be"
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var lat : String by mutableStateOf("")
+    private var lon : String by mutableStateOf("")
+
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -87,6 +95,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
         mapView = MapView(this)
         IWeatherMain = ApiUtils.apiService
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
@@ -109,7 +118,11 @@ class MainActivity : AppCompatActivity() {
     }
     override fun onStart() {
         super.onStart()
-        IWeatherMain.getAllWeather().enqueue(object : Callback<WeatherAPI> {
+
+        val lat ="35"//replace with gps value
+        val lon ="139"//replace with gps value
+        val apiKey= "69702e05c2554c21cf44563eb81ea624"
+        IWeatherMain.getAllWeather(lat,lon,apiKey).enqueue(object : Callback<WeatherAPI> {
             override fun onResponse(call: Call<WeatherAPI>, response: Response<WeatherAPI>) {
                 if (response.code()==200){
 
@@ -123,6 +136,7 @@ class MainActivity : AppCompatActivity() {
 
         })
     }
+
     @Override
     private fun buildResponse(weatherResponse: WeatherAPI?) {
         val temperature = weatherResponse?.sys!!.country+ " temperature is currently "+ weatherResponse?.main!!.temp.toString()

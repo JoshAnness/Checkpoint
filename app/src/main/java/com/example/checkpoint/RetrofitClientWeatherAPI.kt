@@ -1,5 +1,6 @@
 package com.example.checkpoint
 
+import com.example.checkpoint.dao.IWeather
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 

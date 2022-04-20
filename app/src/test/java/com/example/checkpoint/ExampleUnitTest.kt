@@ -1,6 +1,7 @@
 package com.example.checkpoint
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.example.checkpoint.dto.WeatherAPI
 import com.example.checkpoint.services.WeatherService
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -52,7 +53,7 @@ class ExampleUnitTest {
     }
     private suspend fun whenLocationIsGiven() {
         //Goes to WeatherService then inside WeatherService to IWeather
-        weatherApi = weatherService.fetchWeather()
+        weatherApi = weatherService.fetchWeather("35","139","69702e05c2554c21cf44563eb81ea624")!!
 
     }
     private fun thenObtainWeatherForecast() {
@@ -60,5 +61,11 @@ class ExampleUnitTest {
         assertNotNull(weatherApi)
         assertNotNull(weatherApi.weather)
     }
+
+    @Test
+    fun getTemp()= runTest{
+        givenWeatherIsAvailable()
+    }
+
 
 }

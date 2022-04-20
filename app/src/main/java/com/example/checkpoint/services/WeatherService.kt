@@ -9,13 +9,13 @@ import kotlinx.coroutines.withContext
 import retrofit2.awaitResponse
 
 interface IWeatherService {
-    suspend fun fetchWeather(): WeatherAPI?
+    suspend fun fetchWeather(lat: String, lon: String,appId:String): WeatherAPI?
 }
 class WeatherService : IWeatherService {
-    override suspend fun fetchWeather(): WeatherAPI?{
+    override suspend fun fetchWeather(lat: String, lon: String,appId:String): WeatherAPI?{
         return withContext(Dispatchers.IO){
             val service = RetrofitClientWeatherAPI.retrofitInstance?.create(IWeather :: class.java)
-            val weather = async{ service?.getAllWeather()}
+            val weather = async{ service?.getAllWeather(lat,lon,appId)}
             val result = weather.await()?.awaitResponse()?.body()
             return@withContext result
         }

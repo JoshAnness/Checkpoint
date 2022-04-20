@@ -13,7 +13,7 @@ class MainViewModel(var weatherService: IWeatherService = WeatherService()) : Vi
     val weather: MutableLiveData<WeatherAPI> = MutableLiveData<WeatherAPI>()
     fun fetchWeather(){
         viewModelScope.launch {
-            var feedbackAPI = weatherService.fetchWeather()
+            var feedbackAPI = weatherService.fetchWeather("", "","")
             weather.postValue(feedbackAPI)
         }
     }
