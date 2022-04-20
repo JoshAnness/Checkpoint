@@ -59,7 +59,6 @@ import retrofit2.Response
 import java.lang.ref.WeakReference
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
@@ -77,6 +76,7 @@ import com.google.firebase.auth.FirebaseUser
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 import androidx.compose.material.OutlinedTextField
+import androidx.compose.runtime.livedata.observeAsState
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -85,15 +85,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permmissionLauncher: ActivityResultLauncher<Array<String>>
     private var isLocationPermissionGranted = false
     private lateinit var mapView: MapView
-    private lateinit var IWeatherMain : IWeather
+    private lateinit var IWeatherMain: IWeather
     private lateinit var locationPermissionHelper: LocationPermissionHelper
-    private var IWeatherResponse : String by mutableStateOf("")
-    private var IWeatherResponseSmall : String by mutableStateOf("")
-    var weatherAPI : String = "5faf2a035a52f392a0394d9a48bc16be"
+    private var IWeatherResponse: String by mutableStateOf("")
+    private var IWeatherResponseSmall: String by mutableStateOf("")
+    var weatherAPI: String = "5faf2a035a52f392a0394d9a48bc16be"
     private val rviewModel: ReportViewModel by viewModel<ReportViewModel>()
     private var inDelayName: String = ""
-    private var selectedDelay : Delay? = null
-    private var firebaseUser: FirebaseUser? = FirebaseAuth.getInstance().currentUser
+    private var selectedDelay: Delay? = null
+    var firebaseUser: FirebaseUser? = FirebaseAuth.getInstance().currentUser
+
+
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -117,7 +119,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
+        ResourceOptionsManager.getDefault(
+            this,
+            defaultToken = getString(R.string.mapbox_access_token)
+        )
         mapView = MapView(this)
         IWeatherMain = ApiUtils.apiService
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
@@ -129,27 +134,21 @@ class MainActivity : AppCompatActivity() {
         }*/
 
         setContent {
-            firebaseUser?.let {
-                val user = User(it.uid, "")
-                rviewModel.user = user
-                rviewModel.listenToDelay()
-            }
-            // create delay list
-            val delays by rviewModel.delays.observeAsState(initial = emptyList())
-            CheckpointTheme{
-                Surface(color = MaterialTheme.colors.background){
+            CheckpointTheme {
+                Surface(color = MaterialTheme.colors.background) {
 
                 }
-                CheckpointHome(mapView, IWeatherResponseSmall, IWeatherResponse, rviewModel, inDelayName, selectedDelay, firebaseUser )
+                CheckpointHome(mapView, IWeatherResponseSmall, IWeatherResponse)
             }
         }
 
     }
+
     override fun onStart() {
         super.onStart()
         IWeatherMain.getAllWeather().enqueue(object : Callback<WeatherAPI> {
             override fun onResponse(call: Call<WeatherAPI>, response: Response<WeatherAPI>) {
-                if (response.code()==200){
+                if (response.code() == 200) {
 
                     buildResponse(response.body())
                 }
@@ -161,9 +160,11 @@ class MainActivity : AppCompatActivity() {
 
         })
     }
+
     @Override
     private fun buildResponse(weatherResponse: WeatherAPI?) {
-        val temperature = weatherResponse?.sys!!.country+ " temperature is currently "+ weatherResponse?.main!!.temp.toString()
+        val temperature =
+            weatherResponse?.sys!!.country + " temperature is currently " + weatherResponse?.main!!.temp.toString()
         val stringBuilder = "Country: " +
                 weatherResponse.sys.country +
                 "\n" +
@@ -174,7 +175,7 @@ class MainActivity : AppCompatActivity() {
                 weatherResponse.main.tempMin +
                 "\n" +
                 "Temperature(Max): " +
-                weatherResponse.main.tempMax+
+                weatherResponse.main.tempMax +
                 "\n" +
                 "Humidity: " +
                 weatherResponse.main.humidity +
@@ -195,17 +196,18 @@ class MainActivity : AppCompatActivity() {
         )?.let {
             val annotationApi = mapView.annotations
             val pointAnnotationManager = annotationApi.createPointAnnotationManager()
-        // Set options for the resulting symbol layer.
+            // Set options for the resulting symbol layer.
             val pointAnnotationOptions: PointAnnotationOptions = PointAnnotationOptions()
-        // Define a geographic coordinate.
+                // Define a geographic coordinate.
                 .withPoint(Point.fromLngLat(18.06, 59.31))
-        // Specify the bitmap you assigned to the point annotation
-        // The bitmap will be added to map style automatically.
+                // Specify the bitmap you assigned to the point annotation
+                // The bitmap will be added to map style automatically.
                 .withIconImage(it)
-        // Add the resulting pointAnnotation to the map.
+            // Add the resulting pointAnnotation to the map.
             pointAnnotationManager.create(pointAnnotationOptions)
         }
     }
+
     private fun bitmapFromDrawableRes(context: Context, @DrawableRes resourceId: Int) =
         convertDrawableToBitmap(AppCompatResources.getDrawable(context, resourceId))
 
@@ -275,8 +277,12 @@ class MainActivity : AppCompatActivity() {
                 }.toJson()
             )
         }
-        locationComponentPlugin.addOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
-        locationComponentPlugin.addOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
+        locationComponentPlugin.addOnIndicatorPositionChangedListener(
+            onIndicatorPositionChangedListener
+        )
+        locationComponentPlugin.addOnIndicatorBearingChangedListener(
+            onIndicatorBearingChangedListener
+        )
     }
 
     private fun onCameraTrackingDismissed() {
@@ -297,368 +303,326 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         locationPermissionHelper.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
-    private fun requestPermission(){
+
+    private fun requestPermission() {
         isLocationPermissionGranted = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
-        val permissionRequest : MutableList<String> = ArrayList()
+        val permissionRequest: MutableList<String> = ArrayList()
 
-        if(!isLocationPermissionGranted){
+        if (!isLocationPermissionGranted) {
             permissionRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
         }
-        if(permissionRequest.isNotEmpty()){
+        if (permissionRequest.isNotEmpty()) {
             permmissionLauncher.launch(permissionRequest.toTypedArray())
         }
     }
 
-}
 
-@Composable
-private fun MapboxMapView(mapView: MapView, IWeatherResponseSmall: String,IWeatherResponse: String) {
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = {
-            mapView
-        },
-        update = {
-            IWeatherResponse
-            IWeatherResponseSmall
-        }
-    )
-}
-
-
-@Composable
-private fun signIn() {
-    val providers = arrayListOf(
-        AuthUI.IdpConfig.EmailBuilder().build(),
-        AuthUI.IdpConfig.GoogleBuilder().build()
-    )
-    val signinIntent = AuthUI.getInstance()
-        .createSignInIntentBuilder()
-        .setAvailableProviders(providers)
-        .build()
-
-    signInLauncher.launch(signinIntent)
-}
-
-private val signInLauncher = registerForActivityResult(
-    FirebaseAuthUIActivityResultContract()
-) { res ->
-    this.signInResult(res)
-}
-
-
-private fun signInResult(result: FirebaseAuthUIAuthenticationResult) {
-    val response = result.idpResponse
-    if (result.resultCode == ComponentActivity.RESULT_OK) {
-        firebaseUser = FirebaseAuth.getInstance().currentUser
-        firebaseUser?.let {
-            val user = User(it.uid, it.displayName)
-            rviewModel.user = user
-            rviewModel.saveUser()
-            rviewModel.listenToSpecimens()
-        }
-    } else {
-        Log.e("MainActivity.kt", "Error logging in " + response?.error?.errorCode)
-
-    }
-}
-
-@Composable
-fun TextFieldWithDropdownUsage(
-    dataIn: List<Delay>,
-    label: String = "",
-    take: Int = 3,
-    selectedDelay: Delay = Delay()
-) {
-
-    val dropDownOptions = remember { mutableStateOf(listOf<Delay>()) }
-    val textFieldValue =
-        remember(selectedDelay.delayID) { mutableStateOf(TextFieldValue(selectedDelay.delayName)) }
-    val dropDownExpanded = remember { mutableStateOf(false) }
-
-    fun onDropdownDismissRequest() {
-        dropDownExpanded.value = false
-    }
-
-    fun onValueChanged(value: TextFieldValue) {
-        inDelayName = value.text
-        dropDownExpanded.value = true
-        textFieldValue.value = value
-        dropDownOptions.value = dataIn.filter {
-            it.toString().startsWith(value.text) && it.toString() != value.text
-        }.take(take)
-    }
-
-    TextFieldWithDropdown(
-        modifier = Modifier.fillMaxWidth(),
-        value = textFieldValue.value,
-        setValue = ::onValueChanged,
-        onDismissRequest = ::onDropdownDismissRequest,
-        dropDownExpanded = dropDownExpanded.value,
-        list = dropDownOptions.value,
-        label = label
-    )
-}
-
-fun TextFieldWithDropdown(
-    modifier: Modifier = Modifier,
-    value: TextFieldValue,
-    setValue: (TextFieldValue) -> Unit,
-    onDismissRequest: () -> Unit,
-    dropDownExpanded: Boolean,
-    list: List<Delay>,
-    label: String = ""
-) {
-    Box(modifier) {
-        TextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged { focusState ->
-                    if (!focusState.isFocused)
-                        onDismissRequest()
-                },
-            value = value,
-            onValueChange = setValue,
-            label = { Text(label) },
-            colors = TextFieldDefaults.outlinedTextFieldColors()
+    @Composable
+    private fun MapboxMapView(
+        mapView: MapView,
+        IWeatherResponseSmall: String,
+        IWeatherResponse: String
+    ) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = {
+                mapView
+            },
+            update = {
+                IWeatherResponse
+                IWeatherResponseSmall
+            }
         )
-        DropdownMenu(
-            expanded = dropDownExpanded,
-            properties = PopupProperties(
-                focusable = false,
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true
-            ),
-            onDismissRequest = onDismissRequest
-        ) {
-            list.forEach { text ->
-                DropdownMenuItem(onClick = {
-                    setValue(
-                        TextFieldValue(
-                            text.toString(),
-                            TextRange(text.toString().length)
-                        )
-                    )
-                    selectedDelay = text
-
-                }) {
-                    Text(text = text.toString())
-                }
-            }
-        }
     }
-}
 
-@Composable
-fun DelaySpinner(delays: List<Delay>) {
-    var expanded by remember { mutableStateOf(false) }
-    var delayText by remember { mutableStateOf("Delay Collection") }
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Row(Modifier
-            .padding(24.dp)
-            .clickable {
-                expanded = !expanded
-            }
-            .padding(8.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = delayText,
-                fontSize = 18.sp,
-                modifier = Modifier.padding(end = 8.dp)
+    @Composable
+    fun TextFieldWithDropdownUsage(
+        dataIn: List<Delay>,
+        label: String = "",
+        take: Int = 3,
+        selectedDelay: Delay = Delay()
+    ) {
+
+        val dropDownOptions = remember { mutableStateOf(listOf<Delay>()) }
+        val textFieldValue =
+            remember(selectedDelay.delayID) { mutableStateOf(TextFieldValue(selectedDelay.delayName)) }
+        val dropDownExpanded = remember { mutableStateOf(false) }
+
+        fun onDropdownDismissRequest() {
+            dropDownExpanded.value = false
+        }
+
+        fun onValueChanged(value: TextFieldValue) {
+            inDelayName = value.text
+            dropDownExpanded.value = true
+            textFieldValue.value = value
+            dropDownOptions.value = dataIn.filter {
+                it.toString().startsWith(value.text) && it.toString() != value.text
+            }.take(take)
+        }
+
+        TextFieldWithDropdown(
+            modifier = Modifier.fillMaxWidth(),
+            value = textFieldValue.value,
+            setValue = ::onValueChanged,
+            onDismissRequest = ::onDropdownDismissRequest,
+            dropDownExpanded = dropDownExpanded.value,
+            list = dropDownOptions.value,
+            label = label
+        )
+    }
+
+    @Composable
+    fun TextFieldWithDropdown(
+        modifier: Modifier = Modifier,
+        value: TextFieldValue,
+        setValue: (TextFieldValue) -> Unit,
+        onDismissRequest: () -> Unit,
+        dropDownExpanded: Boolean,
+        list: List<Delay>,
+        label: String = ""
+    ) {
+        Box(modifier) {
+            TextField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focusState ->
+                        if (!focusState.isFocused)
+                            onDismissRequest()
+                    },
+                value = value,
+                onValueChange = setValue,
+                label = { Text(label) },
+                colors = TextFieldDefaults.outlinedTextFieldColors()
             )
-            Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = "")
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                delays.forEach { delay ->
+            DropdownMenu(
+                expanded = dropDownExpanded,
+                properties = PopupProperties(
+                    focusable = false,
+                    dismissOnBackPress = true,
+                    dismissOnClickOutside = true
+                ),
+                onDismissRequest = onDismissRequest
+            ) {
+                list.forEach { text ->
                     DropdownMenuItem(onClick = {
-                        expanded = false
-                        if (delay.delayName == rviewModel.NEW_DELAY) {
-                            // create a new specimen object
-                            delayText = ""
-                            delay.delayName = ""
-                        } else {
-                            // we have selected an existing specimen.
-                            delayText = delay.toString()
-                            selectedDelay = Delay(
-                                delayName = "",
-                                reportID = 0,
-                                latitude = "",
-                                longitude = ""
+                        setValue(
+                            TextFieldValue(
+                                text.toString(),
+                                TextRange(text.toString().length)
                             )
-                            inDelayName = Delay.delayName
-                        }
-
-                        rviewModel.selectedDelay = delay
+                        )
+                        selectedDelay = text
 
                     }) {
-                        Text(text = delay.toString())
+                        Text(text = text.toString())
                     }
-
                 }
             }
         }
     }
-}
 
-
-@OptIn(ExperimentalMaterialApi::class)
-@Composable
-fun CheckpointHome(mapView: MapView, IWeatherResponseSmall: String, IWeatherResponse: String, rviewModel : ReportViewModel, inDelayName: String, selectedDelay: Delay?, firebaseUser: FirebaseUser?){
-    val scope = rememberCoroutineScope()
-
-    val scaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
-    )
-
-    val sheetToggle: () -> Unit = {
-        scope.launch {
-            if (scaffoldState.bottomSheetState.isCollapsed) {
-                scaffoldState.bottomSheetState.expand()
-            } else {
-                scaffoldState.bottomSheetState.collapse()
-            }
-        }
-    }
-
-    val radius = (30 * scaffoldState.currentFraction).dp
-
-    BottomSheetScaffold(
-        modifier = Modifier
-            .fillMaxSize(),
-        scaffoldState = scaffoldState,
-        sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
-        content = { MapboxMapView(mapView,IWeatherResponseSmall,IWeatherResponse) },
-        drawerBackgroundColor = MaterialTheme.colors.surface,
-        sheetContent = {
-            SheetCollapsed(
-                isCollapsed = scaffoldState.bottomSheetState.isCollapsed,
-                currentFraction = scaffoldState.currentFraction,
-                onSheetClick = sheetToggle
-            ) {
-                BottomSheetContentSmall(IWeatherResponseSmall)
-            }
-            SheetExpanded{
-                BottomSheetContentLarge(IWeatherResponse, delays, selectedDelay)
-            }
-        },
-        sheetPeekHeight = 80.dp
-    )
-}
-
-@Composable
-fun BottomSheetContentSmall(IWeatherResponseSmall: String) {
-    Text(
-        text = IWeatherResponseSmall,
-        modifier = Modifier.padding(16.dp),
-        style = MaterialTheme.typography.h6,
-        color = MaterialTheme.colors.onSurface
-    )
-}
-
-@Composable
-fun BottomSheetContentLarge(IWeatherResponse: String, delays : List<Delay> = ArrayList<Delay>(), selectedDelay : Delay = Delay()) {
-    Text(
-        text = IWeatherResponse,
-        modifier = Modifier.padding(16.dp),
-        style = MaterialTheme.typography.h6,
-        color = MaterialTheme.colors.onSurface
-    )
-    var inName by remember(selectedDelay.DelayID) { mutableStateOf(selectedDelay.delayName) }
-    var inLatitude by remember(selectedDelay.DelayID) { mutableStateOf(selectedDelay.latitude) }
-    var inDatePlanted by remember(selectedDelay.DelayID) { mutableStateOf(selectedDelay.logitude) }
-    val context = LocalContext.current
-    Column {
-        DelaySpinner(delays = delays)
-        TextFieldWithDropdownUsage(delays, "Select a Delay", 3, selectedDelay)
-        OutlinedTextField(
-            value = inName,
-            onValueChange = { inName = it },
-            label = { Text("Delay: ") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = inLatitude,
-            onValueChange = { inLatitude = it },
-            label = { Text("Latitude: ") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = inDatePlanted,
-            onValueChange = { inDatePlanted = it },
-            label = { Text("Longitude: ") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Row {
-            Button(
-                onClick = {
-                    rviewModel.selectedDelay.apply {
-                        delayName = inDelayName
-                        delayID = selectedDelay?.let {
-                            it.id
-                        } ?: 0
-                        name = inName
-                        latitude = inLatitude
-                        longitude = inDatePlanted
-                    }
-                    rviewModel.saveDelay()
-                    Toast.makeText(
-                        context,
-                        "Delay: ${rviewModel.selectedDelay.toString()}",
-                        Toast.LENGTH_LONG
-                    ).show()
+    @Composable
+    fun DelaySpinner(delays: List<Delay>) {
+        var expanded by remember { mutableStateOf(false) }
+        var delayText by remember { mutableStateOf("Delay Collection") }
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Row(Modifier
+                .padding(24.dp)
+                .clickable {
+                    expanded = !expanded
                 }
-            ) {
-                Text(text = "Save")
-            }
-
-            Button(
-                onClick = {
-                    signIn()
-                }
-            ) {
-
-                Text(text = "Logon")
-            }
-        }
-    }
-}
-
-        @Composable
-        fun SheetCollapsed(
-            isCollapsed: Boolean,
-            currentFraction: Float,
-            onSheetClick: () -> Unit,
-            content: @Composable RowScope.() -> Unit
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(72.dp)
-                    .background(MaterialTheme.colors.primary)
-                    .graphicsLayer(alpha = 1f - currentFraction)
-                    .noRippleClickable(
-                        onClick = onSheetClick,
-                        enabled = isCollapsed
-                    ),
+                .padding(8.dp),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                content()
-            }
-        }
+                Text(
+                    text = delayText,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = "")
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    delays.forEach { delay ->
+                        DropdownMenuItem(onClick = {
+                            expanded = false
+                            if (delay.delayName == rviewModel.NEW_DELAY) {
+                                // create a new specimen object
+                                delayText = ""
+                                delay.delayName = ""
+                            } else {
+                                // we have selected an existing specimen.
+                                delayText = delay.toString()
+                                selectedDelay = Delay(
+                                    delayName = "",
+                                    reportID = 0,
+                                    latitude = "",
+                                    longitude = ""
+                                )
+                                inDelayName = delay.delayName
+                            }
 
-        @Composable
-        fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colors.primary)
-                    .height(400.dp)
-            ) {
-                content()
+                            rviewModel.selectedDelay = delay
+
+                        }) {
+                            Text(text = delay.toString())
+                        }
+
+                    }
+                }
             }
         }
+    }
+
+
+    @Composable
+    private fun signIn() {
+        val providers = arrayListOf(
+            AuthUI.IdpConfig.EmailBuilder().build(),
+            AuthUI.IdpConfig.GoogleBuilder().build()
+        )
+        val signinIntent = AuthUI.getInstance()
+            .createSignInIntentBuilder()
+            .setAvailableProviders(providers)
+            .build()
+
+        signInLauncher.launch(signinIntent)
+    }
+
+    private val signInLauncher = registerForActivityResult(
+        FirebaseAuthUIActivityResultContract()
+    ) { res ->
+        this.signInResult(res)
+    }
+
+
+    private fun signInResult(result: FirebaseAuthUIAuthenticationResult) {
+        val response = result.idpResponse
+        if (result.resultCode == ComponentActivity.RESULT_OK) {
+            firebaseUser = FirebaseAuth.getInstance().currentUser
+            firebaseUser?.let {
+                val user = User(it.uid, it.displayName)
+                rviewModel.user = user
+                rviewModel.saveUser()
+                rviewModel.listenToDelay()
+            }
+        } else {
+            Log.e("MainActivity.kt", "Error logging in " + response?.error?.errorCode)
+
+        }
+    }
+
+
+                @OptIn(ExperimentalMaterialApi::class)
+                @Composable
+                fun CheckpointHome(
+                    mapView: MapView,
+                    IWeatherResponseSmall: String,
+                    IWeatherResponse: String
+                ) {
+                    val scope = rememberCoroutineScope()
+
+                    val scaffoldState = rememberBottomSheetScaffoldState(
+                        bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
+                    )
+
+                    val sheetToggle: () -> Unit = {
+                        scope.launch {
+                            if (scaffoldState.bottomSheetState.isCollapsed) {
+                                scaffoldState.bottomSheetState.expand()
+                            } else {
+                                scaffoldState.bottomSheetState.collapse()
+                            }
+                        }
+                    }
+
+                    val radius = (30 * scaffoldState.currentFraction).dp
+
+                    BottomSheetScaffold(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        scaffoldState = scaffoldState,
+                        sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
+                        content = {
+                            MapboxMapView(
+                                mapView,
+                                IWeatherResponseSmall,
+                                IWeatherResponse
+                            )
+                        },
+                        drawerBackgroundColor = MaterialTheme.colors.surface,
+                        sheetContent = {
+                            SheetCollapsed(
+                                isCollapsed = scaffoldState.bottomSheetState.isCollapsed,
+                                currentFraction = scaffoldState.currentFraction,
+                                onSheetClick = sheetToggle
+                            ) {
+                                BottomSheetContentSmall(IWeatherResponseSmall)
+                            }
+                            SheetExpanded {
+                                BottomSheetContentLarge(IWeatherResponse)
+                            }
+                        },
+                        sheetPeekHeight = 80.dp
+                    )
+                }
+            }
+
+            @Composable
+            fun BottomSheetContentSmall(IWeatherResponseSmall: String) {
+                Text(
+                    text = IWeatherResponseSmall,
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.h6,
+                    color = MaterialTheme.colors.onSurface
+                )
+            }
+
+            @Composable
+            fun BottomSheetContentLarge(IWeatherResponse: String) {
+                Text(
+                    text = IWeatherResponse,
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.h6,
+                    color = MaterialTheme.colors.onSurface
+                )
+            }
+
+            @Composable
+            fun SheetCollapsed(
+                isCollapsed: Boolean,
+                currentFraction: Float,
+                onSheetClick: () -> Unit,
+                content: @Composable RowScope.() -> Unit
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .background(MaterialTheme.colors.primary)
+                        .graphicsLayer(alpha = 1f - currentFraction)
+                        .noRippleClickable(
+                            onClick = onSheetClick,
+                            enabled = isCollapsed
+                        ),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    content()
+                }
+            }
+
+            @Composable
+            fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colors.primary)
+                        .height(400.dp)
+                ) {
+                    content()
+                }
+            }
 
