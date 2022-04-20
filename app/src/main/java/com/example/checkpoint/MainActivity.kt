@@ -8,16 +8,21 @@ import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,8 +59,26 @@ import retrofit2.Response
 import java.lang.ref.WeakReference
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.PopupProperties
+import com.example.checkpoint.dto.Delay
+import com.example.checkpoint.dto.User
+import com.firebase.ui.auth.AuthUI
+import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
+import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
+import androidx.compose.material.OutlinedTextField
+import java.util.*
+import kotlin.collections.ArrayList
 
 
 class MainActivity : AppCompatActivity() {
@@ -67,6 +90,10 @@ class MainActivity : AppCompatActivity() {
     private var IWeatherResponse : String by mutableStateOf("")
     private var IWeatherResponseSmall : String by mutableStateOf("")
     var weatherAPI : String = "5faf2a035a52f392a0394d9a48bc16be"
+    private val rviewModel: ReportViewModel by viewModel<ReportViewModel>()
+    private var inDelayName: String = ""
+    private var selectedDelay : Delay? = null
+    private var firebaseUser: FirebaseUser? = FirebaseAuth.getInstance().currentUser
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -102,11 +129,18 @@ class MainActivity : AppCompatActivity() {
         }*/
 
         setContent {
+            firebaseUser?.let {
+                val user = User(it.uid, "")
+                rviewModel.user = user
+                rviewModel.listenToDelay()
+            }
+            // create delay list
+            val delays by rviewModel.delays.observeAsState(initial = emptyList())
             CheckpointTheme{
                 Surface(color = MaterialTheme.colors.background){
 
                 }
-                CheckpointHome(mapView, IWeatherResponseSmall, IWeatherResponse)
+                CheckpointHome(mapView, IWeatherResponseSmall, IWeatherResponse, rviewModel, inDelayName, selectedDelay, firebaseUser )
             }
         }
 
@@ -294,9 +328,186 @@ private fun MapboxMapView(mapView: MapView, IWeatherResponseSmall: String,IWeath
     )
 }
 
+
+@Composable
+private fun signIn() {
+    val providers = arrayListOf(
+        AuthUI.IdpConfig.EmailBuilder().build(),
+        AuthUI.IdpConfig.GoogleBuilder().build()
+    )
+    val signinIntent = AuthUI.getInstance()
+        .createSignInIntentBuilder()
+        .setAvailableProviders(providers)
+        .build()
+
+    signInLauncher.launch(signinIntent)
+}
+
+private val signInLauncher = registerForActivityResult(
+    FirebaseAuthUIActivityResultContract()
+) { res ->
+    this.signInResult(res)
+}
+
+
+private fun signInResult(result: FirebaseAuthUIAuthenticationResult) {
+    val response = result.idpResponse
+    if (result.resultCode == ComponentActivity.RESULT_OK) {
+        firebaseUser = FirebaseAuth.getInstance().currentUser
+        firebaseUser?.let {
+            val user = User(it.uid, it.displayName)
+            rviewModel.user = user
+            rviewModel.saveUser()
+            rviewModel.listenToSpecimens()
+        }
+    } else {
+        Log.e("MainActivity.kt", "Error logging in " + response?.error?.errorCode)
+
+    }
+}
+
+@Composable
+fun TextFieldWithDropdownUsage(
+    dataIn: List<Delay>,
+    label: String = "",
+    take: Int = 3,
+    selectedDelay: Delay = Delay()
+) {
+
+    val dropDownOptions = remember { mutableStateOf(listOf<Delay>()) }
+    val textFieldValue =
+        remember(selectedDelay.delayID) { mutableStateOf(TextFieldValue(selectedDelay.delayName)) }
+    val dropDownExpanded = remember { mutableStateOf(false) }
+
+    fun onDropdownDismissRequest() {
+        dropDownExpanded.value = false
+    }
+
+    fun onValueChanged(value: TextFieldValue) {
+        inDelayName = value.text
+        dropDownExpanded.value = true
+        textFieldValue.value = value
+        dropDownOptions.value = dataIn.filter {
+            it.toString().startsWith(value.text) && it.toString() != value.text
+        }.take(take)
+    }
+
+    TextFieldWithDropdown(
+        modifier = Modifier.fillMaxWidth(),
+        value = textFieldValue.value,
+        setValue = ::onValueChanged,
+        onDismissRequest = ::onDropdownDismissRequest,
+        dropDownExpanded = dropDownExpanded.value,
+        list = dropDownOptions.value,
+        label = label
+    )
+}
+
+fun TextFieldWithDropdown(
+    modifier: Modifier = Modifier,
+    value: TextFieldValue,
+    setValue: (TextFieldValue) -> Unit,
+    onDismissRequest: () -> Unit,
+    dropDownExpanded: Boolean,
+    list: List<Delay>,
+    label: String = ""
+) {
+    Box(modifier) {
+        TextField(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { focusState ->
+                    if (!focusState.isFocused)
+                        onDismissRequest()
+                },
+            value = value,
+            onValueChange = setValue,
+            label = { Text(label) },
+            colors = TextFieldDefaults.outlinedTextFieldColors()
+        )
+        DropdownMenu(
+            expanded = dropDownExpanded,
+            properties = PopupProperties(
+                focusable = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            ),
+            onDismissRequest = onDismissRequest
+        ) {
+            list.forEach { text ->
+                DropdownMenuItem(onClick = {
+                    setValue(
+                        TextFieldValue(
+                            text.toString(),
+                            TextRange(text.toString().length)
+                        )
+                    )
+                    selectedDelay = text
+
+                }) {
+                    Text(text = text.toString())
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DelaySpinner(delays: List<Delay>) {
+    var expanded by remember { mutableStateOf(false) }
+    var delayText by remember { mutableStateOf("Delay Collection") }
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Row(Modifier
+            .padding(24.dp)
+            .clickable {
+                expanded = !expanded
+            }
+            .padding(8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = delayText,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+            Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = "")
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                delays.forEach { delay ->
+                    DropdownMenuItem(onClick = {
+                        expanded = false
+                        if (delay.delayName == rviewModel.NEW_DELAY) {
+                            // create a new specimen object
+                            delayText = ""
+                            delay.delayName = ""
+                        } else {
+                            // we have selected an existing specimen.
+                            delayText = delay.toString()
+                            selectedDelay = Delay(
+                                delayName = "",
+                                reportID = 0,
+                                latitude = "",
+                                longitude = ""
+                            )
+                            inDelayName = Delay.delayName
+                        }
+
+                        rviewModel.selectedDelay = delay
+
+                    }) {
+                        Text(text = delay.toString())
+                    }
+
+                }
+            }
+        }
+    }
+}
+
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun CheckpointHome(mapView: MapView, IWeatherResponseSmall: String, IWeatherResponse: String){
+fun CheckpointHome(mapView: MapView, IWeatherResponseSmall: String, IWeatherResponse: String, rviewModel : ReportViewModel, inDelayName: String, selectedDelay: Delay?, firebaseUser: FirebaseUser?){
     val scope = rememberCoroutineScope()
 
     val scaffoldState = rememberBottomSheetScaffoldState(
@@ -331,7 +542,7 @@ fun CheckpointHome(mapView: MapView, IWeatherResponseSmall: String, IWeatherResp
                 BottomSheetContentSmall(IWeatherResponseSmall)
             }
             SheetExpanded{
-                BottomSheetContentLarge(IWeatherResponse)
+                BottomSheetContentLarge(IWeatherResponse, delays, selectedDelay)
             }
         },
         sheetPeekHeight = 80.dp
@@ -349,45 +560,105 @@ fun BottomSheetContentSmall(IWeatherResponseSmall: String) {
 }
 
 @Composable
-fun BottomSheetContentLarge(IWeatherResponse: String) {
-    Text(text = IWeatherResponse,
+fun BottomSheetContentLarge(IWeatherResponse: String, delays : List<Delay> = ArrayList<Delay>(), selectedDelay : Delay = Delay()) {
+    Text(
+        text = IWeatherResponse,
         modifier = Modifier.padding(16.dp),
         style = MaterialTheme.typography.h6,
         color = MaterialTheme.colors.onSurface
     )
-}
+    var inName by remember(selectedDelay.DelayID) { mutableStateOf(selectedDelay.delayName) }
+    var inLatitude by remember(selectedDelay.DelayID) { mutableStateOf(selectedDelay.latitude) }
+    var inDatePlanted by remember(selectedDelay.DelayID) { mutableStateOf(selectedDelay.logitude) }
+    val context = LocalContext.current
+    Column {
+        DelaySpinner(delays = delays)
+        TextFieldWithDropdownUsage(delays, "Select a Delay", 3, selectedDelay)
+        OutlinedTextField(
+            value = inName,
+            onValueChange = { inName = it },
+            label = { Text("Delay: ") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = inLatitude,
+            onValueChange = { inLatitude = it },
+            label = { Text("Latitude: ") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = inDatePlanted,
+            onValueChange = { inDatePlanted = it },
+            label = { Text("Longitude: ") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row {
+            Button(
+                onClick = {
+                    rviewModel.selectedDelay.apply {
+                        delayName = inDelayName
+                        delayID = selectedDelay?.let {
+                            it.id
+                        } ?: 0
+                        name = inName
+                        latitude = inLatitude
+                        longitude = inDatePlanted
+                    }
+                    rviewModel.saveDelay()
+                    Toast.makeText(
+                        context,
+                        "Delay: ${rviewModel.selectedDelay.toString()}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            ) {
+                Text(text = "Save")
+            }
 
-@Composable
-fun SheetCollapsed(
-    isCollapsed: Boolean,
-    currentFraction: Float,
-    onSheetClick: () -> Unit,
-    content: @Composable RowScope.() -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp)
-            .background(MaterialTheme.colors.primary)
-            .graphicsLayer(alpha = 1f - currentFraction)
-            .noRippleClickable(
-                onClick = onSheetClick,
-                enabled = isCollapsed
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        content()
+            Button(
+                onClick = {
+                    signIn()
+                }
+            ) {
+
+                Text(text = "Logon")
+            }
+        }
     }
 }
 
-@Composable
-fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colors.primary)
-            .height(400.dp)
-    ) {
-        content()
-    }
-}
+        @Composable
+        fun SheetCollapsed(
+            isCollapsed: Boolean,
+            currentFraction: Float,
+            onSheetClick: () -> Unit,
+            content: @Composable RowScope.() -> Unit
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp)
+                    .background(MaterialTheme.colors.primary)
+                    .graphicsLayer(alpha = 1f - currentFraction)
+                    .noRippleClickable(
+                        onClick = onSheetClick,
+                        enabled = isCollapsed
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                content()
+            }
+        }
+
+        @Composable
+        fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colors.primary)
+                    .height(400.dp)
+            ) {
+                content()
+            }
+        }
+
