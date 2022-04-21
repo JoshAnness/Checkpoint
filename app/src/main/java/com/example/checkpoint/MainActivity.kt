@@ -10,6 +10,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Bundle
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
@@ -33,9 +34,7 @@ import com.example.checkpoint.dto.WeatherAPI
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.*
 import com.google.android.gms.tasks.Task
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
@@ -71,6 +70,7 @@ class MainActivity : AppCompatActivity() {
     private var IWeatherResponse: String by mutableStateOf("")
     private var IWeatherResponseSmall: String by mutableStateOf("")
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationCallback: LocationCallback
     //private val fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var locationRequest: LocationRequest
     private var cancellationTokenSource = CancellationTokenSource()
@@ -88,7 +88,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
-
+        getLocationUpdates()
         mapView = MapView(this)
         IWeatherMain = ApiUtils.apiService
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
@@ -113,14 +113,17 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            currentLocation();
+            getLocationUpdates();
         } else {
             requestPermission();
         }
 
+        setWeather()
+    }
+
+    private fun setWeather() {
         var latitude = lat.toBigDecimal().toPlainString()
         var longitude = lon.toBigDecimal().toPlainString()
-        lon.toString()
         val apiKey = "69702e05c2554c21cf44563eb81ea624"
         val units = "imperial"
 
@@ -133,6 +136,16 @@ class MainActivity : AppCompatActivity() {
             override fun onFailure(call: Call<WeatherAPI>, t: Throwable) {
             }
         })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startLocationUpdates()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopLocationUpdates()
     }
 
     @SuppressLint("MissingPermission")
@@ -160,6 +173,43 @@ class MainActivity : AppCompatActivity() {
                 lon = location.longitude
             }
         }
+        //getLocationUpdates()
+    }
+
+    private fun getLocationUpdates()
+    {
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        locationRequest = LocationRequest.create().apply {
+            interval = 30000
+            fastestInterval = 30000
+            smallestDisplacement = 16093.4f // 10 miles
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                if (locationResult.locations.isNotEmpty()) {
+                    val location = locationResult.lastLocation
+                    if(location != null) {
+                        lat = location.latitude
+                        lon = location.longitude
+                        setWeather()
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startLocationUpdates() {
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.getMainLooper()
+        )
+    }
+
+    private fun stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
@@ -304,7 +354,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onCameraTrackingDismissed() {
-        Toast.makeText(this, "onCameraTrackingDismissed", Toast.LENGTH_SHORT).show()
+        //Toast.makeText(this, "onCameraTrackingDismissed", Toast.LENGTH_SHORT).show()
         mapView.location
             .removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
         mapView.location
