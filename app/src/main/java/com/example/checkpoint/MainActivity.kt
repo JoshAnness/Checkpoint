@@ -61,7 +61,6 @@ import java.lang.ref.WeakReference
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.sp
@@ -74,10 +73,6 @@ import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import org.koin.androidx.viewmodel.ext.android.viewModel
-
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.runtime.livedata.observeAsState
-import java.util.*
 import kotlin.collections.ArrayList
 
 
@@ -94,6 +89,7 @@ class MainActivity : AppCompatActivity() {
     private var inDelayName: String = ""
     private var selectedDelay: Delay? = null
     var firebaseUser: FirebaseUser? = FirebaseAuth.getInstance().currentUser
+    val user = User("", "")
 
 
 
@@ -134,6 +130,10 @@ class MainActivity : AppCompatActivity() {
         }*/
 
         setContent {
+            firebaseUser?.let {
+                val user = User(it.uid, "")
+                rviewModel.user = user
+            }
             CheckpointTheme {
                 Surface(color = MaterialTheme.colors.background) {
 
@@ -478,7 +478,29 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+
     @Composable
+    private fun muButton() {
+        if (user == User("","")) {
+        Button(
+            onClick = {
+                signIn()
+            }
+        ) {
+
+            Text(
+                text = "Login",
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.h6,
+                color = MaterialTheme.colors.onSurface
+            )
+        }
+    }
+        else {
+            BottomSheetContentLarge(IWeatherResponse)
+        }
+    }
+
     private fun signIn() {
         val providers = arrayListOf(
             AuthUI.IdpConfig.EmailBuilder().build(),
@@ -492,22 +514,21 @@ class MainActivity : AppCompatActivity() {
         signInLauncher.launch(signinIntent)
     }
 
-    private val signInLauncher = registerForActivityResult(
+    private val signInLauncher = registerForActivityResult (
         FirebaseAuthUIActivityResultContract()
-    ) { res ->
-        this.signInResult(res)
+    ) {
+            res -> this.signInResult(res)
     }
 
 
     private fun signInResult(result: FirebaseAuthUIAuthenticationResult) {
         val response = result.idpResponse
-        if (result.resultCode == ComponentActivity.RESULT_OK) {
+        if (result.resultCode == RESULT_OK) {
             firebaseUser = FirebaseAuth.getInstance().currentUser
             firebaseUser?.let {
                 val user = User(it.uid, it.displayName)
                 rviewModel.user = user
                 rviewModel.saveUser()
-                rviewModel.listenToDelay()
             }
         } else {
             Log.e("MainActivity.kt", "Error logging in " + response?.error?.errorCode)
@@ -563,7 +584,7 @@ class MainActivity : AppCompatActivity() {
                                 BottomSheetContentSmall(IWeatherResponseSmall)
                             }
                             SheetExpanded {
-                                BottomSheetContentLarge(IWeatherResponse)
+                                muButton()
                             }
                         },
                         sheetPeekHeight = 80.dp
