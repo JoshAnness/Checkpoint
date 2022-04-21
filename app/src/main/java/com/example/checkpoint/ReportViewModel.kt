@@ -8,7 +8,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.checkpoint.dto.Delay
-import com.example.checkpoint.dto.Report
 import com.example.checkpoint.dto.User
 import com.example.checkpoint.services.IReportService
 import com.example.checkpoint.services.ReportService
@@ -19,7 +18,6 @@ import kotlinx.coroutines.launch
 
 class ReportViewModel (var reportService: IReportService = ReportService()) : ViewModel() {
     var user: User? = null
-    val reports: MutableLiveData<List<Report>> = MutableLiveData<List<Report>>()
     val delays: MutableLiveData<List<Delay>> = MutableLiveData<List<Delay>>()
     var selectedDelay by mutableStateOf(Delay())
     val NEW_DELAY = "New Delay"
@@ -32,12 +30,6 @@ class ReportViewModel (var reportService: IReportService = ReportService()) : Vi
         firestore.firestoreSettings = FirebaseFirestoreSettings.Builder().build()
     }
 
-    fun fetchReports() {
-        viewModelScope.launch {
-            var innerReports = reportService.fetchReports()
-            reports.postValue(innerReports)
-        }
-    }
 
     fun saveDelay() {
         user?.let { user ->

@@ -57,7 +57,6 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.lang.ref.WeakReference
-
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.focus.onFocusChanged
@@ -89,7 +88,6 @@ class MainActivity : AppCompatActivity() {
     private var inDelayName: String = ""
     private var selectedDelay: Delay? = null
     var firebaseUser: FirebaseUser? = FirebaseAuth.getInstance().currentUser
-    val user = User("", "")
 
 
 
@@ -130,10 +128,6 @@ class MainActivity : AppCompatActivity() {
         }*/
 
         setContent {
-            firebaseUser?.let {
-                val user = User(it.uid, "")
-                rviewModel.user = user
-            }
             CheckpointTheme {
                 Surface(color = MaterialTheme.colors.background) {
 
@@ -338,150 +332,11 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    @Composable
-    fun TextFieldWithDropdownUsage(
-        dataIn: List<Delay>,
-        label: String = "",
-        take: Int = 3,
-        selectedDelay: Delay = Delay()
-    ) {
-
-        val dropDownOptions = remember { mutableStateOf(listOf<Delay>()) }
-        val textFieldValue =
-            remember(selectedDelay.delayID) { mutableStateOf(TextFieldValue(selectedDelay.delayName)) }
-        val dropDownExpanded = remember { mutableStateOf(false) }
-
-        fun onDropdownDismissRequest() {
-            dropDownExpanded.value = false
-        }
-
-        fun onValueChanged(value: TextFieldValue) {
-            inDelayName = value.text
-            dropDownExpanded.value = true
-            textFieldValue.value = value
-            dropDownOptions.value = dataIn.filter {
-                it.toString().startsWith(value.text) && it.toString() != value.text
-            }.take(take)
-        }
-
-        TextFieldWithDropdown(
-            modifier = Modifier.fillMaxWidth(),
-            value = textFieldValue.value,
-            setValue = ::onValueChanged,
-            onDismissRequest = ::onDropdownDismissRequest,
-            dropDownExpanded = dropDownExpanded.value,
-            list = dropDownOptions.value,
-            label = label
-        )
-    }
-
-    @Composable
-    fun TextFieldWithDropdown(
-        modifier: Modifier = Modifier,
-        value: TextFieldValue,
-        setValue: (TextFieldValue) -> Unit,
-        onDismissRequest: () -> Unit,
-        dropDownExpanded: Boolean,
-        list: List<Delay>,
-        label: String = ""
-    ) {
-        Box(modifier) {
-            TextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { focusState ->
-                        if (!focusState.isFocused)
-                            onDismissRequest()
-                    },
-                value = value,
-                onValueChange = setValue,
-                label = { Text(label) },
-                colors = TextFieldDefaults.outlinedTextFieldColors()
-            )
-            DropdownMenu(
-                expanded = dropDownExpanded,
-                properties = PopupProperties(
-                    focusable = false,
-                    dismissOnBackPress = true,
-                    dismissOnClickOutside = true
-                ),
-                onDismissRequest = onDismissRequest
-            ) {
-                list.forEach { text ->
-                    DropdownMenuItem(onClick = {
-                        setValue(
-                            TextFieldValue(
-                                text.toString(),
-                                TextRange(text.toString().length)
-                            )
-                        )
-                        selectedDelay = text
-
-                    }) {
-                        Text(text = text.toString())
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun DelaySpinner(delays: List<Delay>) {
-        var expanded by remember { mutableStateOf(false) }
-        var delayText by remember { mutableStateOf("Delay Collection") }
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Row(Modifier
-                .padding(24.dp)
-                .clickable {
-                    expanded = !expanded
-                }
-                .padding(8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = delayText,
-                    fontSize = 18.sp,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = "")
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    delays.forEach { delay ->
-                        DropdownMenuItem(onClick = {
-                            expanded = false
-                            if (delay.delayName == rviewModel.NEW_DELAY) {
-                                // create a new specimen object
-                                delayText = ""
-                                delay.delayName = ""
-                            } else {
-                                // we have selected an existing specimen.
-                                delayText = delay.toString()
-                                selectedDelay = Delay(
-                                    delayName = "",
-                                    reportID = 0,
-                                    latitude = "",
-                                    longitude = ""
-                                )
-                                inDelayName = delay.delayName
-                            }
-
-                            rviewModel.selectedDelay = delay
-
-                        }) {
-                            Text(text = delay.toString())
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-
 
 
     @Composable
     private fun muButton() {
-        if (user == User("","")) {
+        if (firebaseUser == null) {
         Button(
             onClick = {
                 signIn()
@@ -495,6 +350,7 @@ class MainActivity : AppCompatActivity() {
                 color = MaterialTheme.colors.onSurface
             )
         }
+            Text(text = firebaseUser.toString())
     }
         else {
             BottomSheetContentLarge(IWeatherResponse)
