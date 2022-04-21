@@ -1,6 +1,7 @@
 package com.example.checkpoint
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -8,8 +9,8 @@ import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.location.Location
-import android.location.LocationManager
 import android.os.Bundle
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
@@ -26,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.checkpoint.dao.ApiUtils
 import com.example.checkpoint.dao.IWeather
@@ -34,8 +34,8 @@ import com.example.checkpoint.dto.WeatherAPI
 import com.example.checkpoint.extension.currentFraction
 import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
+import com.google.android.gms.tasks.Task
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
@@ -52,6 +52,7 @@ import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
@@ -60,17 +61,154 @@ import java.lang.ref.WeakReference
 
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var permmissionLauncher: ActivityResultLauncher<Array<String>>
+
+    private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
     private var isLocationPermissionGranted = false
     private lateinit var mapView: MapView
-    private lateinit var IWeatherMain : IWeather
+    private lateinit var IWeatherMain: IWeather
     private lateinit var locationPermissionHelper: LocationPermissionHelper
-    private var IWeatherResponse : String by mutableStateOf("")
-    private var IWeatherResponseSmall : String by mutableStateOf("")
+    private var IWeatherResponse: String by mutableStateOf("")
+    private var IWeatherResponseSmall: String by mutableStateOf("")
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var lat : String by mutableStateOf("")
-    private var lon : String by mutableStateOf("")
+    private lateinit var locationCallback: LocationCallback
+    private lateinit var locationRequest: LocationRequest
+    private var cancellationTokenSource = CancellationTokenSource()
+    private var lat: Double = 0.0 //by mutableStateOf("")
+    private var lon: Double = 0.0 //by mutableStateOf("")
+    private var LOCATION_REFRESH_TIME: Int = 15000
+    private var LOCATION_REFRESH_DISTANCE = 40233 //25 miles
+    //private var locationManager : LocationManager? = null
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        ResourceOptionsManager.getDefault(
+            this,
+            defaultToken = getString(R.string.mapbox_access_token)
+        )
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
+        mapView = MapView(this)
+        IWeatherMain = ApiUtils.apiService
+        locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
+        locationPermissionHelper.checkPermissions {
+            onMapReady()
+        }
+        /*btnGetWeather.setOnClickListener{
+            getLocation()
+        }*/
+
+        setContent {
+            CheckpointTheme {
+                Surface(color = MaterialTheme.colors.background) {
+
+                }
+                CheckpointHome(mapView, IWeatherResponseSmall, IWeatherResponse)
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    override fun onStart() {
+        super.onStart()
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            currentLocation();
+        } else {
+            requestPermission();
+        }
+
+        setWeather()
+    }
+
+    private fun setWeather() {
+        var latitude = lat.toBigDecimal().toPlainString()
+        var longitude = lon.toBigDecimal().toPlainString()
+        val apiKey = "69702e05c2554c21cf44563eb81ea624"
+        val units = "imperial"
+
+        IWeatherMain.getAllWeather(latitude, longitude, apiKey, units).enqueue(object : Callback<WeatherAPI> {
+            override fun onResponse(call: Call<WeatherAPI>, response: Response<WeatherAPI>) {
+                if (response.code() == 200) {
+                    buildResponse(response.body())
+                }
+            }
+            override fun onFailure(call: Call<WeatherAPI>, t: Throwable) {
+            }
+        })
+    }
+
+    /*override fun onResume() {
+        super.onResume()
+        startLocationUpdates()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopLocationUpdates()
+    }*/
+
+    /*@SuppressLint("MissingPermission")
+    private fun getLastLocation() {
+        fusedLocationClient.lastLocation.addOnCompleteListener { res ->
+            var res = res.result
+            if(res == null) {
+                currentLocation()
+            } else {
+                lat = res.latitude
+                lon = res.longitude
+            }
+        }
+    }*/
+
+    @SuppressLint("MissingPermission")
+    private fun currentLocation() {
+        val currentLocationTask: Task<Location> = fusedLocationClient.getCurrentLocation(
+            LocationRequest.PRIORITY_HIGH_ACCURACY,
+            cancellationTokenSource.token
+        )
+        currentLocationTask.addOnSuccessListener { location ->
+            location?.let {
+                lat = location.latitude
+                lon = location.longitude
+            }
+        }
+        //getLocationUpdates()
+    }
+
+    /*private fun getLocationUpdates()
+    {
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        locationRequest = LocationRequest.create().apply {
+            interval = 30000
+            fastestInterval = 30000
+            smallestDisplacement = 16093.4f // 10 miles
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                if (locationResult.locations.isNotEmpty()) {
+                    val location = locationResult.lastLocation
+                    if(location != null) {
+                        lat = location.latitude
+                        lon = location.longitude
+                        setWeather()
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startLocationUpdates() {
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.getMainLooper()
+        )
+    }
+
+    private fun stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+    }*/
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -92,57 +230,10 @@ class MainActivity : AppCompatActivity() {
         override fun onMoveEnd(detector: MoveGestureDetector) {}
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        ResourceOptionsManager.getDefault(this, defaultToken = getString(R.string.mapbox_access_token))
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
-        mapView = MapView(this)
-        IWeatherMain = ApiUtils.apiService
-        locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
-        locationPermissionHelper.checkPermissions {
-            onMapReady()
-        }
-        /*btnGetWeather.setOnClickListener{
-            getLocation()
-        }*/
-
-        setContent {
-            CheckpointTheme{
-                Surface(color = MaterialTheme.colors.background){
-
-                }
-                CheckpointHome(mapView, IWeatherResponseSmall, IWeatherResponse)
-            }
-        }
-
-    }
-    override fun onStart() {
-        super.onStart()
-
-        val lat ="35"//replace with gps value
-        val lon ="139"//replace with gps value
-        val apiKey= "69702e05c2554c21cf44563eb81ea624"
-        IWeatherMain.getAllWeather(lat,lon,apiKey).enqueue(object : Callback<WeatherAPI> {
-            override fun onResponse(call: Call<WeatherAPI>, response: Response<WeatherAPI>) {
-                if (response.code()==200){
-
-                    buildResponse(response.body())
-                }
-            }
-
-            override fun onFailure(call: Call<WeatherAPI>, t: Throwable) {
-
-            }
-
-        })
-    }
-
     @Override
     private fun buildResponse(weatherResponse: WeatherAPI?) {
-        val temperature = weatherResponse?.sys!!.country+ " temperature is currently "+ weatherResponse?.main!!.temp.toString()
-        val stringBuilder = "Country: " +
-                weatherResponse.sys.country +
-                "\n" +
+        val temperature = weatherResponse?.main!!.temp
+        val stringBuilder =
                 "Temperature: " +
                 weatherResponse.main.temp +
                 "\n" +
@@ -150,17 +241,15 @@ class MainActivity : AppCompatActivity() {
                 weatherResponse.main.tempMin +
                 "\n" +
                 "Temperature(Max): " +
-                weatherResponse.main.tempMax+
+                weatherResponse.main.tempMax +
                 "\n" +
                 "Humidity: " +
                 weatherResponse.main.humidity +
                 "\n" +
                 "Pressure: " +
                 weatherResponse.main.pressure
-        IWeatherResponseSmall = temperature
+        IWeatherResponseSmall = temperature.toString()
         IWeatherResponse = stringBuilder
-
-
     }
 
     private fun addAnnotationToMap() {
@@ -171,17 +260,18 @@ class MainActivity : AppCompatActivity() {
         )?.let {
             val annotationApi = mapView.annotations
             val pointAnnotationManager = annotationApi.createPointAnnotationManager()
-        // Set options for the resulting symbol layer.
+            // Set options for the resulting symbol layer.
             val pointAnnotationOptions: PointAnnotationOptions = PointAnnotationOptions()
-        // Define a geographic coordinate.
+                // Define a geographic coordinate.
                 .withPoint(Point.fromLngLat(18.06, 59.31))
-        // Specify the bitmap you assigned to the point annotation
-        // The bitmap will be added to map style automatically.
+                // Specify the bitmap you assigned to the point annotation
+                // The bitmap will be added to map style automatically.
                 .withIconImage(it)
-        // Add the resulting pointAnnotation to the map.
+            // Add the resulting pointAnnotation to the map.
             pointAnnotationManager.create(pointAnnotationOptions)
         }
     }
+
     private fun bitmapFromDrawableRes(context: Context, @DrawableRes resourceId: Int) =
         convertDrawableToBitmap(AppCompatResources.getDrawable(context, resourceId))
 
@@ -251,12 +341,16 @@ class MainActivity : AppCompatActivity() {
                 }.toJson()
             )
         }
-        locationComponentPlugin.addOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
-        locationComponentPlugin.addOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
+        locationComponentPlugin.addOnIndicatorPositionChangedListener(
+            onIndicatorPositionChangedListener
+        )
+        locationComponentPlugin.addOnIndicatorBearingChangedListener(
+            onIndicatorBearingChangedListener
+        )
     }
 
     private fun onCameraTrackingDismissed() {
-        Toast.makeText(this, "onCameraTrackingDismissed", Toast.LENGTH_SHORT).show()
+        //Toast.makeText(this, "onCameraTrackingDismissed", Toast.LENGTH_SHORT).show()
         mapView.location
             .removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
         mapView.location
@@ -273,131 +367,136 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         locationPermissionHelper.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
-    private fun requestPermission(){
+
+    private fun requestPermission() {
         isLocationPermissionGranted = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
-        val permissionRequest : MutableList<String> = ArrayList()
+        val permissionRequest: MutableList<String> = ArrayList()
 
-        if(!isLocationPermissionGranted){
+        if (!isLocationPermissionGranted) {
             permissionRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
         }
-        if(permissionRequest.isNotEmpty()){
-            permmissionLauncher.launch(permissionRequest.toTypedArray())
+        if (permissionRequest.isNotEmpty()) {
+            permissionLauncher.launch(permissionRequest.toTypedArray())
         }
     }
 
-}
-
-@Composable
-private fun MapboxMapView(mapView: MapView, IWeatherResponseSmall: String,IWeatherResponse: String) {
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = {
-            mapView
-        },
-        update = {
-            IWeatherResponse
-            IWeatherResponseSmall
-        }
-    )
-}
-
-@OptIn(ExperimentalMaterialApi::class)
-@Composable
-fun CheckpointHome(mapView: MapView, IWeatherResponseSmall: String, IWeatherResponse: String){
-    val scope = rememberCoroutineScope()
-
-    val scaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
-    )
-
-    val sheetToggle: () -> Unit = {
-        scope.launch {
-            if (scaffoldState.bottomSheetState.isCollapsed) {
-                scaffoldState.bottomSheetState.expand()
-            } else {
-                scaffoldState.bottomSheetState.collapse()
-            }
-        }
-    }
-
-    val radius = (30 * scaffoldState.currentFraction).dp
-
-    BottomSheetScaffold(
-        modifier = Modifier
-            .fillMaxSize(),
-        scaffoldState = scaffoldState,
-        sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
-        content = { MapboxMapView(mapView,IWeatherResponseSmall,IWeatherResponse) },
-        drawerBackgroundColor = MaterialTheme.colors.surface,
-        sheetContent = {
-            SheetCollapsed(
-                isCollapsed = scaffoldState.bottomSheetState.isCollapsed,
-                currentFraction = scaffoldState.currentFraction,
-                onSheetClick = sheetToggle
-            ) {
-                BottomSheetContentSmall(IWeatherResponseSmall)
-            }
-            SheetExpanded{
-                BottomSheetContentLarge(IWeatherResponse)
-            }
-        },
-        sheetPeekHeight = 80.dp
-    )
-}
-
-@Composable
-fun BottomSheetContentSmall(IWeatherResponseSmall: String) {
-    Text(
-        text = IWeatherResponseSmall,
-        modifier = Modifier.padding(16.dp),
-        style = MaterialTheme.typography.h6,
-        color = MaterialTheme.colors.onSurface
-    )
-}
-
-@Composable
-fun BottomSheetContentLarge(IWeatherResponse: String) {
-    Text(text = IWeatherResponse,
-        modifier = Modifier.padding(16.dp),
-        style = MaterialTheme.typography.h6,
-        color = MaterialTheme.colors.onSurface
-    )
-}
-
-@Composable
-fun SheetCollapsed(
-    isCollapsed: Boolean,
-    currentFraction: Float,
-    onSheetClick: () -> Unit,
-    content: @Composable RowScope.() -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp)
-            .background(MaterialTheme.colors.primary)
-            .graphicsLayer(alpha = 1f - currentFraction)
-            .noRippleClickable(
-                onClick = onSheetClick,
-                enabled = isCollapsed
-            ),
-        verticalAlignment = Alignment.CenterVertically
+    @Composable
+    private fun MapboxMapView(
+        mapView: MapView,
+        IWeatherResponseSmall: String,
+        IWeatherResponse: String
     ) {
-        content()
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = {
+                mapView
+            },
+            update = {
+                IWeatherResponse
+                IWeatherResponseSmall
+            }
+        )
     }
-}
 
-@Composable
-fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colors.primary)
-            .height(400.dp)
+    @OptIn(ExperimentalMaterialApi::class)
+    @Composable
+    fun CheckpointHome(mapView: MapView, IWeatherResponseSmall: String, IWeatherResponse: String) {
+        val scope = rememberCoroutineScope()
+
+        val scaffoldState = rememberBottomSheetScaffoldState(
+            bottomSheetState = rememberBottomSheetState(BottomSheetValue.Collapsed)
+        )
+
+        val sheetToggle: () -> Unit = {
+            scope.launch {
+                if (scaffoldState.bottomSheetState.isCollapsed) {
+                    scaffoldState.bottomSheetState.expand()
+                } else {
+                    scaffoldState.bottomSheetState.collapse()
+                }
+            }
+        }
+
+        val radius = (30 * scaffoldState.currentFraction).dp
+
+        BottomSheetScaffold(
+            modifier = Modifier
+                .fillMaxSize(),
+            scaffoldState = scaffoldState,
+            sheetShape = RoundedCornerShape(topStart = radius, topEnd = radius),
+            content = { MapboxMapView(mapView, IWeatherResponseSmall, IWeatherResponse) },
+            drawerBackgroundColor = MaterialTheme.colors.surface,
+            sheetContent = {
+                SheetCollapsed(
+                    isCollapsed = scaffoldState.bottomSheetState.isCollapsed,
+                    currentFraction = scaffoldState.currentFraction,
+                    onSheetClick = sheetToggle
+                ) {
+                    BottomSheetContentSmall(IWeatherResponseSmall)
+                }
+                SheetExpanded {
+                    BottomSheetContentLarge(IWeatherResponse)
+                }
+            },
+            sheetPeekHeight = 80.dp
+        )
+    }
+
+    @Composable
+    fun BottomSheetContentSmall(IWeatherResponseSmall: String) {
+        Text(
+            text = IWeatherResponseSmall,
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.h6,
+            color = MaterialTheme.colors.onSurface
+        )
+    }
+
+    @Composable
+    fun BottomSheetContentLarge(IWeatherResponse: String) {
+        Text(
+            text = IWeatherResponse,
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.h6,
+            color = MaterialTheme.colors.onSurface
+        )
+    }
+
+    @Composable
+    fun SheetCollapsed(
+        isCollapsed: Boolean,
+        currentFraction: Float,
+        onSheetClick: () -> Unit,
+        content: @Composable RowScope.() -> Unit
     ) {
-        content()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
+                .background(MaterialTheme.colors.primary)
+                .graphicsLayer(alpha = 1f - currentFraction)
+                .noRippleClickable(
+                    onClick = onSheetClick,
+                    enabled = isCollapsed
+                ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            content()
+        }
+    }
+
+    @Composable
+    fun SheetExpanded(content: @Composable BoxScope.() -> Unit) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colors.primary)
+                .height(400.dp)
+        ) {
+            content()
+        }
     }
 }
