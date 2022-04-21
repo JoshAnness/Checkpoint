@@ -71,7 +71,6 @@ class MainActivity : AppCompatActivity() {
     private var IWeatherResponseSmall: String by mutableStateOf("")
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
-    //private val fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var locationRequest: LocationRequest
     private var cancellationTokenSource = CancellationTokenSource()
     private var lat: Double = 0.0 //by mutableStateOf("")
@@ -88,7 +87,6 @@ class MainActivity : AppCompatActivity() {
         )
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
-        getLocationUpdates()
         mapView = MapView(this)
         IWeatherMain = ApiUtils.apiService
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
@@ -113,7 +111,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            getLocationUpdates();
+            currentLocation();
         } else {
             requestPermission();
         }
@@ -138,7 +136,7 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    override fun onResume() {
+    /*override fun onResume() {
         super.onResume()
         startLocationUpdates()
     }
@@ -146,9 +144,9 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         stopLocationUpdates()
-    }
+    }*/
 
-    @SuppressLint("MissingPermission")
+    /*@SuppressLint("MissingPermission")
     private fun getLastLocation() {
         fusedLocationClient.lastLocation.addOnCompleteListener { res ->
             var res = res.result
@@ -159,7 +157,7 @@ class MainActivity : AppCompatActivity() {
                 lon = res.longitude
             }
         }
-    }
+    }*/
 
     @SuppressLint("MissingPermission")
     private fun currentLocation() {
@@ -176,7 +174,7 @@ class MainActivity : AppCompatActivity() {
         //getLocationUpdates()
     }
 
-    private fun getLocationUpdates()
+    /*private fun getLocationUpdates()
     {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         locationRequest = LocationRequest.create().apply {
@@ -210,7 +208,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
-    }
+    }*/
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         mapView.getMapboxMap().setCamera(CameraOptions.Builder().bearing(it).build())
@@ -235,9 +233,7 @@ class MainActivity : AppCompatActivity() {
     @Override
     private fun buildResponse(weatherResponse: WeatherAPI?) {
         val temperature = weatherResponse?.main!!.temp
-        val stringBuilder = "Country: " +
-                weatherResponse.sys.country +
-                "\n" +
+        val stringBuilder =
                 "Temperature: " +
                 weatherResponse.main.temp +
                 "\n" +
