@@ -24,7 +24,7 @@ interface IWeather {
 
 @GET("/data/2.5/weather?")
 
-fun getAllWeather(@Query("lat")lat: String, @Query("lon")lon: String,@Query("appid")appId:String): Call<WeatherAPI>
+fun getAllWeather(@Query("lat")lat: String, @Query("lon")lon: String, @Query("appid")appId:String, @Query("units")units: String): Call<WeatherAPI>
 
 
 }

@@ -1,6 +1,7 @@
 package com.example.checkpoint
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -8,7 +9,6 @@ import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.location.Location
-import android.location.LocationManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.checkpoint.dao.ApiUtils
 import com.example.checkpoint.dao.IWeather
@@ -36,6 +35,8 @@ import com.example.checkpoint.extension.noRippleClickable
 import com.example.checkpoint.ui.theme.CheckpointTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.tasks.Task
 import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
@@ -52,6 +53,7 @@ import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
@@ -69,8 +71,14 @@ class MainActivity : AppCompatActivity() {
     private var IWeatherResponse: String by mutableStateOf("")
     private var IWeatherResponseSmall: String by mutableStateOf("")
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var lat: String by mutableStateOf("")
-    private var lon: String by mutableStateOf("")
+    //private val fusedLocationProviderClient: FusedLocationProviderClient
+    private lateinit var locationRequest: LocationRequest
+    private var cancellationTokenSource = CancellationTokenSource()
+    private var lat: Double = 0.0 //by mutableStateOf("")
+    private var lon: Double = 0.0 //by mutableStateOf("")
+    private var LOCATION_REFRESH_TIME: Int = 15000
+    private var LOCATION_REFRESH_DISTANCE = 40233 //25 miles
+    //private var locationManager : LocationManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,7 +86,9 @@ class MainActivity : AppCompatActivity() {
             this,
             defaultToken = getString(R.string.mapbox_access_token)
         )
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
+
         mapView = MapView(this)
         IWeatherMain = ApiUtils.apiService
         locationPermissionHelper = LocationPermissionHelper(WeakReference(this))
@@ -99,25 +109,57 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("MissingPermission")
     override fun onStart() {
         super.onStart()
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            getLastLocation();
+        } else {
+            requestPermission();
+        }
 
-        val lat = "35"//replace with gps value
-        val lon = "139"//replace with gps value
+        var latitude = lat.toBigDecimal().toPlainString()
+        var longitude = lon.toBigDecimal().toPlainString()
+        lon.toString()
         val apiKey = "69702e05c2554c21cf44563eb81ea624"
-        IWeatherMain.getAllWeather(lat, lon, apiKey).enqueue(object : Callback<WeatherAPI> {
+        val units = "imperial"
+
+        IWeatherMain.getAllWeather(latitude, longitude, apiKey, units).enqueue(object : Callback<WeatherAPI> {
             override fun onResponse(call: Call<WeatherAPI>, response: Response<WeatherAPI>) {
                 if (response.code() == 200) {
-
                     buildResponse(response.body())
                 }
             }
-
             override fun onFailure(call: Call<WeatherAPI>, t: Throwable) {
-
             }
-
         })
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun getLastLocation() {
+        fusedLocationClient.lastLocation.addOnCompleteListener { res ->
+            var res = res.result
+            if(res == null) {
+                currentLocation()
+            } else {
+                lat = res.latitude
+                lon = res.longitude
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun currentLocation() {
+        val currentLocationTask: Task<Location> = fusedLocationClient.getCurrentLocation(
+            LocationRequest.PRIORITY_HIGH_ACCURACY,
+            cancellationTokenSource.token
+        )
+        currentLocationTask.addOnSuccessListener { location ->
+            location?.let {
+                lat = location.latitude
+                lon = location.longitude
+            }
+        }
     }
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
@@ -142,8 +184,7 @@ class MainActivity : AppCompatActivity() {
 
     @Override
     private fun buildResponse(weatherResponse: WeatherAPI?) {
-        val temperature =
-            weatherResponse?.sys!!.country + " temperature is currently " + weatherResponse?.main!!.temp.toString()
+        val temperature = weatherResponse?.main!!.temp
         val stringBuilder = "Country: " +
                 weatherResponse.sys.country +
                 "\n" +
@@ -161,10 +202,8 @@ class MainActivity : AppCompatActivity() {
                 "\n" +
                 "Pressure: " +
                 weatherResponse.main.pressure
-        IWeatherResponseSmall = temperature
+        IWeatherResponseSmall = temperature.toString()
         IWeatherResponse = stringBuilder
-
-
     }
 
     private fun addAnnotationToMap() {
