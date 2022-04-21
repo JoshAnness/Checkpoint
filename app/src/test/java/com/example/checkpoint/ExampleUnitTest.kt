@@ -53,7 +53,7 @@ class ExampleUnitTest {
     }
     private suspend fun whenLocationIsGiven() {
         //Goes to WeatherService then inside WeatherService to IWeather
-        weatherApi = weatherService.fetchWeather("35","139","69702e05c2554c21cf44563eb81ea624")!!
+        weatherApi = weatherService.fetchWeather("35","139","69702e05c2554c21cf44563eb81ea624", "imperial")!!
 
     }
     private fun thenObtainWeatherForecast() {
