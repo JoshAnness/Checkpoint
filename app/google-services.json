@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "692008830843-5tmk416am6is4gjh58s201efm1r3fh5p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.checkpoint",
+            "certificate_hash": "cf1e09f4360ecbb255875dbfc066c0131ee52b17"
+          }
+        },
+        {
           "client_id": "692008830843-d0mi7g4p14pa46s0ubjlns5du00d9upa.apps.googleusercontent.com",
           "client_type": 3
         }

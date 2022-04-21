@@ -9,14 +9,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.checkpoint.dto.Delay
 import com.example.checkpoint.dto.User
-import com.example.checkpoint.services.IReportService
-import com.example.checkpoint.services.ReportService
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.launch
 
-class ReportViewModel (var reportService: IReportService = ReportService()) : ViewModel() {
+class ReportViewModel : ViewModel() {
     var user: User? = null
     val delays: MutableLiveData<List<Delay>> = MutableLiveData<List<Delay>>()
     var selectedDelay by mutableStateOf(Delay())
