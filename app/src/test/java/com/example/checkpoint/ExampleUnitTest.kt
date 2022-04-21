@@ -59,13 +59,9 @@ class ExampleUnitTest {
     private fun thenObtainWeatherForecast() {
         //Then test to find out if it can extract the weather
         assertNotNull(weatherApi)
-        assertNotNull(weatherApi.weather)
     }
 
-    @Test
-    fun getTemp()= runTest{
-        givenWeatherIsAvailable()
-    }
+
 
 
 }
