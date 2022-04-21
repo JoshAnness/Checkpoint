@@ -1,5 +1,5 @@
 # Checkpoint
-Recommend running on the API 29 for testing! 
+Recommend running on the API 28-32 for testing! 
 ---
 
 ### Design Document
